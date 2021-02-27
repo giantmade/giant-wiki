@@ -27,6 +27,9 @@ urlpatterns = [
     path("wiki/<str:path>/<int:specific_id>/", wiki_views.page, name="history"),
     path("wiki/<str:path>/edit/", wiki_views.edit, name="edit"),
 
+    # Search
+    path("search/", wiki_views.search, name="search"),
+
     # Homepage.
     path("", core_views.home, name="home"),
 

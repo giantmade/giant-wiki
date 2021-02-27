@@ -1,9 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
+from django.http import HttpResponseForbidden
 
 from django.contrib.auth.models import User
-from . import models, forms
+
+from . import models, forms, documents
 
 
 @login_required
@@ -66,4 +68,19 @@ def edit(request, path):
         'page': page,
         'history': history,
         'form': form,
+    })
+
+@login_required
+def search(request):
+
+    if not "q" in request.GET:
+        return HttpResponseForbidden()
+
+    query = request.GET['q']
+
+    results = documents.PageDocument.search().filter("term", content=query)
+
+    return render(request, "wiki/search.html", {
+        'query': query,
+        'results': results,
     })

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Results for '{{ query}}'{% endblock %}
+
+{% block header %}
+<nav class="navbar bg-light mb-3 border-bottom">
+    <div>
+        <a href="{% url "page" "index" %}">wiki</a>/Search</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12 pl-3 pr-0">
+
+            <h3>Results for '{{ query}}'</h3>
+
+            {% for r in results.to_queryset %}
+                <h4><a href="{% url "page" r.path %}">{{ r.path }}</a></h4>
+                {{ r.content|truncatewords_html:"30" }}
+            {% endfor %}
+
+            <!-- Edit bar -->
+            <div class="border-top d-flex align-items-center p-3">
+                {% comment %} <div class="flex-grow-1 text-muted">Last updated: {{ page.last_updated }} by {{ page.last_edited_by }}.</div>
+                <div><a class="btn btn-large btn-primary" href="{% url "edit" page.path %}">Edit Page</a></div> {% endcomment %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

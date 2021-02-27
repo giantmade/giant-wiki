@@ -25,6 +25,10 @@
         <ul class="nav">
             <li class="nav-item"><a class="nav-link text-light pl-0" href="{% url "wiki" %}">giant-wiki</a></li>
         </ul>
+        <form class="form-inline my-2 my-lg-0" method="GET" action="{% url "search" %}">
+            <input class="form-control mr-sm-2" type="search" placeholder="Search" name="q">
+            <button class="btn btn-success my-2 my-sm-0" type="submit">Go</button>
+        </form>
     </nav>
     
     <!-- Main body -->

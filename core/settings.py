@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "crispy_forms",
+    "django_elasticsearch_dsl",
     "core",
     "users",
     "wiki",
@@ -82,3 +83,9 @@ LOGIN_REDIRECT_URL = "/wiki/index/"
 LOGIN_URL = "/login/"
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
+
+ELASTICSEARCH_DSL={
+    'default': {
+        'hosts': os.environ.get("ELASTICSEARCH_URL", False)
+    },
+}
