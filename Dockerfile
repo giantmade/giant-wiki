@@ -16,5 +16,5 @@ RUN set -ex \
 ENV PATH=/root/.poetry/bin:${PATH}
 
 COPY . /app/
-EXPOSE 8000
-CMD gunicorn core.wsgi -b 0.0.0.0:8000 --log-file -
+EXPOSE 80
+CMD gunicorn core.wsgi -b 0.0.0.0:80 --log-file -
