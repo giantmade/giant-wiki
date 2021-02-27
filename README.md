@@ -14,6 +14,6 @@
 - ~~Audit for old codebase mentions.~~
 - ~~Adjust `core.home` to bounce to wiki index.~~
 - ~~Page history, and browsing older versions.~~
-- Search.
+- ~~Search.~~
 - ~~`base_no_nav.html` might be redundant.~~
 - ~~squash migrations~~
