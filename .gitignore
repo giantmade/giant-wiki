@@ -1,0 +1,9 @@
+.coverage
+reports/
+__pycache__
+env/
+var/
+sqlite.db
+database.sqlite3
+.vscode/settings.json
+database.sqlite
