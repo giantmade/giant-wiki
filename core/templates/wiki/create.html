@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}Create Wiki{% endblock %}
+
+{% block body %}
+<h1>Create Wiki</h1>
+
+<form method="post" action="{% url "create" request.user.username %}">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    {{ form.errors }}
+
+    <p>{{form.slug.label }}<br>{{ form.slug }}</p>
+    <input type="submit" value="Create">
+</form>
+{% endblock %}

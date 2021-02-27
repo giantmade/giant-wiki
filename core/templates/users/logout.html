@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Logout{% endblock %}
+
+{% block header %}
+{% endblock %}
+
+{% block body %}
+
+<div class="row justify-content-center">
+    <div class="col-md-3 mt-5 mb-5">
+    <p>You have been logged out.</p>
+    <p><a class="btn btn-large btn-primary" href="{% url "login" %}">Login</a></p>
+    </div>
+</div>
+
+{% endblock %}

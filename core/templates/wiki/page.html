@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block tools %}
+<a href="{% url "edit" page.path %}">Edit</a>
+<a href="#">History</a>
+{% endblock %}
+
+{% block title %}{{ page.wiki.slug }}/{{ page.path }}{% endblock %}
+
+{% block header %}
+<nav class="navbar bg-light mb-3 border-bottom">
+    <div>
+        <a href="{% url "page" "index" %}">wiki</a>/<a href="{% url "page" page.path %}">{{ page.path }}</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12 pl-0 pr-0">
+
+            <!-- Page content -->
+            <div class="ml-3 mr-3">
+            {{ page.render|safe }}
+            </div>
+
+            <!-- Edit bar -->
+            <div class="border-top d-flex align-items-center p-3">
+                <div class="flex-grow-1 text-muted">Last updated: {{ page.last_updated }} by {{ page.last_edited_by }}.</div>
+                <div><a class="btn btn-large btn-primary" href="{% url "edit" page.path %}">Edit Page</a></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  $(document).ready(function() {
+    $('body').keydown(function (e) {
+
+        // Detect ctrl-enter.
+        if (e.ctrlKey && e.keyCode == 13) {
+            window.location = '{% url "edit" page.path %}';
+        }
+    });
+  });
+</script>
+{% endblock %}
