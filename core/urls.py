@@ -23,6 +23,7 @@ urlpatterns = [
 
     # Wiki pages
     path("wiki/", wiki_views.page, name="wiki"),
+    path("wiki/history/", wiki_views.history, name="history"),
     path("wiki/<str:path>/", wiki_views.page, name="page"),
     path("wiki/<str:path>/<int:specific_id>/", wiki_views.page, name="history"),
     path("wiki/<str:path>/edit/", wiki_views.edit, name="edit"),

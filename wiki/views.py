@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from django.http import HttpResponseForbidden
+from django.core.paginator import Paginator
 
 from django.contrib.auth.models import User
 
@@ -95,4 +96,21 @@ def search(request):
     return render(request, "wiki/search.html", {
         'query': query,
         'results': results,
+    })
+
+
+@login_required
+def history(request):
+    """
+    This shows the history across all pages.
+    """
+
+    objects = models.Page.objects.all().order_by("-last_updated")
+    paginator = Paginator(objects, 15)
+
+    page_number = request.GET.get('page') or 1
+    items = paginator.get_page(page_number)
+
+    return render(request, 'wiki/history.html', {
+        'items': items
     })

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}History{% endblock %}
+
+{% block header %}
+<nav class="navbar bg-light mb-3 border-bottom">
+    <div>
+        <a href="{% url "page" "index" %}">wiki</a>/<a href="{% url "history" %}">History</a>
+    </div>
+</nav>
+{% endblock %}
+
+{% block body %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12 pl-3 pr-0">
+
+            <h3>History</h3>
+
+            <ul>
+            {% for i in items %}
+                <li><a href="{% url "page" i.path %}">{{ i.path }}</a>, updated by {{ i.last_edited_by }} on {{ i.last_updated }}</li>
+            {% endfor %}                
+            </ul>
+
+            <div class="pagination">
+                <span class="step-links">
+                    {% if items.has_previous %}
+                        <a href="?page=1">&laquo; first</a>
+                        <a href="?page={{ items.previous_page_number }}">previous</a>
+                    {% endif %}
+            
+                    <span class="current">
+                        Page {{ items.number }} of {{ items.paginator.num_pages }}.
+                    </span>
+            
+                    {% if items.has_next %}
+                        <a href="?page={{ items.next_page_number }}">next</a>
+                        <a href="?page={{ items.paginator.num_pages }}">last &raquo;</a>
+                    {% endif %}
+                </span>
+            </div>
+            
+        </div>
+    </div>
+</div>
+{% endblock %}
