@@ -14,6 +14,17 @@ def page(request, path="index", specific_id=False):
     This displays a given wiki page.
     """
 
+    # Get the sidebar.
+    try:
+        sidebar = models.Page.objects.filter(path="Sidebar").order_by("-last_updated")[0]
+    except (models.Page.DoesNotExist, IndexError):
+        sidebar = models.Page(
+            path="Sidebar",
+            content="# Sidebar",
+            last_edited_by=request.user
+        )
+        sidebar.save()
+
     # Get the page.
     try:
         if specific_id:
@@ -26,6 +37,7 @@ def page(request, path="index", specific_id=False):
         return redirect(reverse("edit", kwargs={'path': path}))
 
     return render(request, "wiki/page.html", {
+        'sidebar': sidebar,
         'page': page,
     })
 
