@@ -33,7 +33,10 @@
             <!-- Edit bar -->
             <div class="border-top d-flex align-items-center p-3">
                 <div class="flex-grow-1 text-muted">Last updated: {{ page.last_updated }} by {{ page.last_edited_by }}.</div>
-                <div><a class="btn btn-large btn-primary" href="{% url "edit" page.path %}">Edit Page</a></div>
+                <div>
+                    <a class="btn btn-large btn-warning" href="/wiki/feed/">RSS</a>
+                    <a class="btn btn-large btn-primary" href="{% url "edit" page.path %}">Edit Page</a>
+                </div>
             </div>
         </div>
     </div>
