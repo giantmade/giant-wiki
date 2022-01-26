@@ -16,6 +16,7 @@ Markdown = "^3.3.4"
 whitenoise = "^5.2.0"
 elasticsearch-dsl = ">=6.0.0,<7.0.0"
 django-elasticsearch-dsl = "6.5.0"
+django-environ = "^0.8.1"
 
 [tool.poetry.dev-dependencies]
 

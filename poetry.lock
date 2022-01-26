@@ -63,6 +63,19 @@ elasticsearch-dsl = ">=6.4.0"
 six = "*"
 
 [[package]]
+name = "django-environ"
+version = "0.8.1"
+description = "A package that allows you to utilize 12factor inspired environment variables to configure your Django application."
+category = "main"
+optional = false
+python-versions = ">=3.4,<4"
+
+[package.extras]
+develop = ["coverage[toml] (>=5.0a4)", "pytest (>=4.6.11)", "furo (>=2021.8.17b43,<2021.9.0)", "sphinx (>=3.5.0)", "sphinx-notfound-page"]
+docs = ["furo (>=2021.8.17b43,<2021.9.0)", "sphinx (>=3.5.0)", "sphinx-notfound-page"]
+testing = ["coverage[toml] (>=5.0a4)", "pytest (>=4.6.11)"]
+
+[[package]]
 name = "elasticsearch"
 version = "6.8.1"
 description = "Python client for Elasticsearch"
@@ -206,7 +219,7 @@ dev = ["pytest (>=4.6.2)", "black (>=19.3b0)"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "c747676368fc99f782eef09bf87e2d969deba3cabab46b8fcd4ecc0558da12a9"
+content-hash = "4b1b58cea613544b479f9eec2c6961530c6e3adf2008a6ca5afecedbd2664f08"
 
 [metadata.files]
 asgiref = [
@@ -232,6 +245,10 @@ django-crispy-forms = [
 django-elasticsearch-dsl = [
     {file = "django-elasticsearch-dsl-6.5.0.tar.gz", hash = "sha256:367c8d8c2ca5916247f1abd86a5df46f646fa48eef88316a02f640edba727ebc"},
     {file = "django_elasticsearch_dsl-6.5.0-py2.py3-none-any.whl", hash = "sha256:87f1af8ea0930b93d0448317ee3fa5d1289f622932a9bbbafdba60df25df982a"},
+]
+django-environ = [
+    {file = "django-environ-0.8.1.tar.gz", hash = "sha256:6f0bc902b43891656b20486938cba0861dc62892784a44919170719572a534cb"},
+    {file = "django_environ-0.8.1-py2.py3-none-any.whl", hash = "sha256:42593bee519a527602a467c7b682aee1a051c2597f98c45f4f4f44169ecdb6e5"},
 ]
 elasticsearch = [
     {file = "elasticsearch-6.8.1-py2.py3-none-any.whl", hash = "sha256:540d633afcc0a32972e4b489c4559c9a96e294850853238f7a18b1cbd267c2ed"},
