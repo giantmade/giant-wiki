@@ -9,7 +9,14 @@ SECRET_KEY = os.environ.get("SECRET_KEY")
 
 DEBUG = os.environ.get("DEBUG", False)
 
-ALLOWED_HOSTS = ["*"]
+PRIMARY_HOST = os.environ.get("PRIMARY_HOST", "www.wiki.giantmade.net")
+
+ALLOWED_HOSTS = [
+    PRIMARY_HOST,
+    "wiki.giantmade.net",
+    "wiki.internal.giantmade.net",
+    "www.wiki.internal.giantmade.net"
+]
 
 INSTALLED_APPS = [
     "django.contrib.admin",
