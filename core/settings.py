@@ -6,9 +6,9 @@ from loguru import logger
 
 env = environ.Env(
     # Set cast type, and default values
-    DEBUG=(bool, False)
-    ALLOWED_HOSTS=(list, ['*'])
-    CSRF_TRUSTED_ORIGINS=(list, [])
+    DEBUG=(bool, False),
+    ALLOWED_HOSTS=(list, ['*']),
+    CSRF_TRUSTED_ORIGINS=(list, []),
     CAS_ENABLED=(bool, False),
     CAS_SERVER_URL=(str, 'https://cas.example.com'),
     CAS_VERSION=(str, '3'),
