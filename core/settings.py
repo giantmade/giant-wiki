@@ -2,8 +2,6 @@ import os
 import environ
 import dj_database_url
 
-from loguru import logger
-
 env = environ.Env(
     # Set cast type, and default values
     DEBUG=(bool, False),
