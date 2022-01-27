@@ -18,8 +18,8 @@ else:
 if env("CAS_ENABLED"):
     urlpatterns = [
         # CAS authentication views.
-        path('login/', django_cas_ng.views.LoginView.as_view(), name='login'),
-        path('logout/', django_cas_ng.views.LogoutView.as_view(), name='logout'),
+        path('login/', django_cas_ng.views.LoginView.as_view(), name='cas_ng_login'),
+        path('logout/', django_cas_ng.views.LogoutView.as_view(), name='cas_ng_logout'),
         path('callback/', django_cas_ng.views.CallbackView.as_view(), name='callback'),
     ]
 else:
