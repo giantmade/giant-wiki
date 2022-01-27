@@ -1,22 +1,28 @@
 import os
-
+import environ
 import dj_database_url
+
 from loguru import logger
+
+env = environ.Env(
+    # Set cast type, and default values
+    DEBUG=(bool, False),
+    ALLOWED_HOSTS=(list, ["*"]),
+    CSRF_TRUSTED_ORIGINS=(list, []),
+    CAS_ENABLED=(bool, False),
+    CAS_SERVER_URL=(str, 'https://cas.example.com'),
+    CAS_VERSION=(str, '3')
+)
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-SECRET_KEY = os.environ.get("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY")
 
-DEBUG = os.environ.get("DEBUG", False)
+DEBUG = env("DEBUG", False)
 
-PRIMARY_HOST = os.environ.get("PRIMARY_HOST", "www.wiki.giantmade.net")
+ALLOWED_HOSTS = env("ALLOWED_HOSTS")
 
-ALLOWED_HOSTS = [
-    PRIMARY_HOST,
-    "wiki.giantmade.net",
-    "wiki.internal.giantmade.net",
-    "www.wiki.internal.giantmade.net"
-]
+CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -41,6 +47,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+	"django_cas_ng.middleware.CASMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -74,6 +81,18 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
+
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+)
+
+
+# Enable CAS for authentication if configured.
+if env("CAS_ENABLED"):
+    AUTHENTICATION_BACKENDS += ("django_cas_ng.backends.CASBackend",)
+    CAS_SERVER_URL = env("CAS_SERVER_URL")
+    CAS_VERSION = env("CAS_VERSION")
+    INSTALLED_APPS += ("django_cas_ng",)
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
