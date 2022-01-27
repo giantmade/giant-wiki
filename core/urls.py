@@ -18,9 +18,9 @@ else:
 if env("CAS_ENABLED"):
     urlpatterns = [
         # CAS authentication views.
-        path('login/', django_cas_ng.views.LoginView.as_view(), name='cas_ng_login'),
-        path('logout/', django_cas_ng.views.LogoutView.as_view(), name='cas_ng_logout'),
-        path('callback/', django_cas_ng.views.CallbackView.as_view(), name='callback'),
+        path("login/", django_cas_ng.views.LoginView.as_view(), name="cas_ng_login"),
+        path("logout/", django_cas_ng.views.LogoutView.as_view(), name="cas_ng_logout"),
+        path("callback/", django_cas_ng.views.CallbackView.as_view(), name="callback"),
     ]
 else:
     urlpatterns = [
@@ -41,7 +41,7 @@ urlpatterns = [
     # Wiki pages
     path("wiki/", wiki_views.page, name="wiki"),
     path("wiki/history/", wiki_views.history, name="history"),
-    path('wiki/feed/', wiki_feeds.PageHistoryFeed()),
+    path("wiki/feed/", wiki_feeds.PageHistoryFeed()),
     path("wiki/<str:path>/", wiki_views.page, name="page"),
     path("wiki/<str:path>/<int:specific_id>/", wiki_views.page, name="history"),
     path("wiki/<str:path>/edit/", wiki_views.edit, name="edit"),
