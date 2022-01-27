@@ -1,6 +1,8 @@
 from django.shortcuts import redirect, render
 from django.urls import reverse
 
+from core.settings import CAS_SERVER_URL
+
 
 def home(request):
     """
@@ -10,4 +12,4 @@ def home(request):
     if request.user.is_authenticated:
         return redirect(reverse("page", kwargs={'path': 'index'}))
     else:
-        return redirect("https://login.giantmade.net/")
+        return redirect(CAS_SERVER_URL)
