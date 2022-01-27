@@ -1,4 +1,5 @@
 import os
+import socket
 import environ
 import dj_database_url
 
@@ -20,7 +21,20 @@ SECRET_KEY = env("SECRET_KEY")
 
 DEBUG = env("DEBUG", False)
 
-ALLOWED_HOSTS = env("ALLOWED_HOSTS")
+PRIMARY_HOST = os.environ.get("PRIMARY_HOST", "wiki.giantmade.net")
+
+HOST_NAME = socket.gethostname()
+HOST_IP = socket.gethostbyname(HOST_NAME)
+
+ALLOWED_HOSTS = [
+    HOST_IP,
+    HOST_NAME,
+    PRIMARY_HOST,
+    "localhost",
+    "127.0.0.1",
+]
+
+ALLOWED_HOSTS += env("ALLOWED_HOSTS")
 
 CSRF_TRUSTED_ORIGINS = env("CSRF_TRUSTED_ORIGINS")
 
