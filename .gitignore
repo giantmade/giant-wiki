@@ -8,4 +8,4 @@ database.sqlite3
 .vscode/settings.json
 .vscode/
 database.sqlite
-
+.idea/
