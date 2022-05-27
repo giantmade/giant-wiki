@@ -15,6 +15,8 @@ class Page(models.Model):
     content = models.TextField()
     last_updated = models.DateTimeField(auto_now=True)
     last_edited_by = models.ForeignKey(user_models.User, on_delete=models.CASCADE)
+    is_deprecated = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
 
     @property
     def render(self):
