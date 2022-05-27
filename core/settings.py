@@ -47,7 +47,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-	"django_cas_ng.middleware.CASMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -93,6 +92,7 @@ if env("CAS_ENABLED"):
     CAS_SERVER_URL = env("CAS_SERVER_URL")
     CAS_VERSION = env("CAS_VERSION")
     INSTALLED_APPS += ("django_cas_ng",)
+    MIDDLEWARE += ["django_cas_ng.middleware.CASMiddleware",]
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
