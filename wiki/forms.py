@@ -9,4 +9,4 @@ class PageForm(forms.ModelForm):
 
     class Meta:
         model = models.Page
-        fields = ('path', 'content')
+        fields = ('path', 'content', 'is_deprecated', 'is_deleted')

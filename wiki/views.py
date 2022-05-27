@@ -29,9 +29,9 @@ def page(request, path="index", specific_id=False):
     # Get the page.
     try:
         if specific_id:
-            page = models.Page.objects.get(path=path, id=specific_id)
+            page = models.Page.objects.get(path=path, id=specific_id, is_deleted=False)
         else:
-            page = models.Page.objects.filter(path=path).order_by("-last_updated")[0]
+            page = models.Page.objects.filter(path=path, is_deleted=False).order_by("-last_updated")[0]
 
     # If there is no page, then we will send them to the PageForm.
     except (models.Page.DoesNotExist, IndexError):
@@ -53,7 +53,7 @@ def edit(request, path):
 
     # Get the page.
     try:
-        page = models.Page.objects.filter(path=path).order_by("-last_updated")[0]
+        page = models.Page.objects.filter(path=path, is_deleted=False).order_by("-last_updated")[0]
     # If there is no page, then create a stub.
     except (models.Page.DoesNotExist, IndexError):
         page = models.Page(
@@ -69,7 +69,8 @@ def edit(request, path):
             new_page = models.Page(
                 path=path,
                 content=form.cleaned_data["content"],
-                last_edited_by=request.user
+                last_edited_by=request.user,
+                is_deprecated=form.cleaned_data["is_deprecated"],
             )
             new_page.save()
             return redirect(reverse("page", kwargs={'path': path}))

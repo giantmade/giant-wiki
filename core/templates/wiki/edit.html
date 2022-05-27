@@ -50,6 +50,12 @@
             {{ form.content }}
           </div>
 
+          <div class="text-right pt-2 pr-2">
+            <div class="form-group form-check">
+              {{ form.is_deprecated }} mark this page as deprecated.
+            </div>
+          </div>
+
           <div class="text-right pt-2 pr-2 pb-2">
             <a href="{% url "page" page.path %}" class="btn btn-danger btn-large">Cancel</a>
             <input class="btn btn-primary btn-large" type="submit" value="Save Page">
