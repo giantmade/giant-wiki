@@ -47,7 +47,7 @@
     <div class="container-fluid border-top justify-content-center pt-3">
         {% if request.user.is_authenticated %}
         <p class="text-center text-light">
-            <a class="text-secondary" href="/wiki/feed">RSS</a> | <a class="text-secondary" href="{% url "history" %}">History</a> | <a class="text-secondary" href="{% url "self" %}">Settings</a> | <a class="text-secondary" href="{% url "logout" %}">Log out</a>
+            <a class="text-secondary" href="/wiki/feed">RSS</a> | <a class="text-secondary" href="{% url "history" %}">History</a> | <a class="text-secondary" href="{% url "self" %}">Settings</a> | <a class="text-secondary" href="/logout/">Log out</a>
         </p>
         {% endif %}
     </div>
