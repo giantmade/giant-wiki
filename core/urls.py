@@ -30,7 +30,7 @@ else:
     ]
 
 # fmt: off
-urlpatterns = [
+urlpatterns += [
     # Admin interface.
     path("admin/", admin.site.urls),
 
