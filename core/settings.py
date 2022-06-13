@@ -11,7 +11,7 @@ env = environ.Env(
     CSRF_TRUSTED_ORIGINS=(list, []),
     CAS_ENABLED=(bool, False),
     CAS_SERVER_URL=(str, 'https://cas.example.com'),
-    CAS_VERSION=(str, '3')
+    CAS_VERSION=(str, '3'),
     SITE_TITLE=(str, 'Giant Wiki'),
 )
 
