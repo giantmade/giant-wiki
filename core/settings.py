@@ -117,3 +117,5 @@ ELASTICSEARCH_DSL={
         'hosts': os.environ.get("ELASTICSEARCH_URL", False)
     },
 }
+
+SITE_TITLE = env("SITE_TITLE")
