@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8">
-    <title>{% block title %}{% endblock %} | giant-wiki</title>
+    <title>{% block title %}{% endblock %} | {{ site_title }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
     {% if profile.dark_mode %}
@@ -27,7 +27,7 @@
     <!-- Top nav -->
     <nav class="navbar navbar-dark bg-primary">
         <ul class="nav">
-            <li class="nav-item"><a class="nav-link text-light pl-0" href="{% url "wiki" %}">giant-wiki</a></li>
+            <li class="nav-item"><a class="nav-link text-light pl-0" href="{% url "wiki" %}">{{ site_title }}</a></li>
         </ul>
         <form class="form-inline my-2 my-lg-0" method="GET" action="{% url "search" %}">
             <input class="form-control mr-sm-2" type="search" placeholder="Search" name="q">

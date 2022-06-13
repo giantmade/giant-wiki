@@ -12,6 +12,7 @@ env = environ.Env(
     CAS_ENABLED=(bool, False),
     CAS_SERVER_URL=(str, 'https://cas.example.com'),
     CAS_VERSION=(str, '3')
+    SITE_TITLE=(str, 'Giant Wiki'),
 )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -63,6 +64,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "users.context_processors.get_profile",
+                "core.context_processors.get_title",
             ]
         },
     }
