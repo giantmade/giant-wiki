@@ -1,9 +1,8 @@
 import re
-from markdown import markdown
-
-from django.db import models
 
 from django.contrib.auth import models as user_models
+from django.db import models
+from markdown import markdown
 
 
 class Page(models.Model):
@@ -25,9 +24,19 @@ class Page(models.Model):
         """
 
         # Convert [[links]] to HTML links.
-        c = re.sub(r'\[\[(\w+)\]\]', r'<a href="/wiki/\1/">\1</a>', self.content)
+        c = re.sub(r"\[\[(\w+)\]\]", r'<a href="/wiki/\1/">\1</a>', self.content)
 
         # Render Markdown to HTML.
         c = markdown(c)
 
         return c
+
+
+class Attachments(models.Model):
+    """
+    An attachment
+    """
+
+    attachment = models.FileField(upload_to="files/")
+    uploaded_date = models.DateTimeField(auto_now=True)
+    is_deleted = models.BooleanField(default=False)

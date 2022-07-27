@@ -1,7 +1,7 @@
 import os
-import environ
-import dj_database_url
 
+import dj_database_url
+import environ
 from loguru import logger
 
 env = environ.Env(
@@ -10,10 +10,12 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["*"]),
     CSRF_TRUSTED_ORIGINS=(list, []),
     CAS_ENABLED=(bool, False),
-    CAS_SERVER_URL=(str, 'https://cas.example.com'),
-    CAS_VERSION=(str, '3'),
-    SITE_TITLE=(str, 'Giant Wiki'),
+    CAS_SERVER_URL=(str, "https://cas.example.com"),
+    CAS_VERSION=(str, "3"),
+    SITE_TITLE=(str, "Giant Wiki"),
 )
+
+SITE_TITLE = "Giant Wiki"
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -76,16 +78,16 @@ DATABASES = {}
 DATABASES["default"] = dj_database_url.parse(os.environ["DATABASE_URL"])
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
-AUTHENTICATION_BACKENDS = (
-    "django.contrib.auth.backends.ModelBackend",
-)
+AUTHENTICATION_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
 
 
 # Enable CAS for authentication if configured.
@@ -94,7 +96,9 @@ if env("CAS_ENABLED"):
     CAS_SERVER_URL = env("CAS_SERVER_URL")
     CAS_VERSION = env("CAS_VERSION")
     INSTALLED_APPS += ("django_cas_ng",)
-    MIDDLEWARE += ["django_cas_ng.middleware.CASMiddleware",]
+    MIDDLEWARE += [
+        "django_cas_ng.middleware.CASMiddleware",
+    ]
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -105,6 +109,8 @@ USE_TZ = True
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
 
+MEDIA_ROOT = "/storage"
+
 WHITENOISE_USE_FINDERS = True
 
 LOGIN_REDIRECT_URL = "/wiki/index/"
@@ -112,8 +118,6 @@ LOGIN_URL = "/login/"
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
-ELASTICSEARCH_DSL={
-    'default': {
-        'hosts': os.environ.get("ELASTICSEARCH_URL", False)
-    },
+ELASTICSEARCH_DSL = {
+    "default": {"hosts": os.environ.get("ELASTICSEARCH_URL", False)},
 }

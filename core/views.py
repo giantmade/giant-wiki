@@ -8,6 +8,6 @@ def home(request):
     """
 
     if request.user.is_authenticated:
-        return redirect(reverse("page", kwargs={'path': 'index'}))
+        return redirect(reverse("page", kwargs={"path": "index"}))
     else:
         return redirect(reverse("login"))
