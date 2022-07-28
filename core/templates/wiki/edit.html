@@ -35,7 +35,7 @@
 
       <div class="collapse" id="historyList">
         {% for item in history %}
-        <p><a href="{% url "history" item.path item.id %}">{{ item.last_updated }} by {{ item.last_edited_by }}</a></p>
+        <p><a href="{% url 'history' item.path item.id %}">{{ item.last_updated }} by {{ item.last_edited_by }}</a></p>
         {% endfor %}
       </div>
       <p><a href="#historyList" data-toggle="collapse" class="btn btn-sm btn-primary">Show</a></p>
@@ -43,7 +43,7 @@
     </div>
 
     <div class="col-md-9 pl-0 pr-0">
-        <form method="POST" action="{% url "edit" page.path %}">
+        <form method="POST" action="{% url 'edit' page.path %}">
           {% csrf_token %}
 
           <div class="border-bottom">
@@ -66,21 +66,66 @@
           <div class="text-right pt-2 pr-2 pb-2 attachments">
             <form method="post" enctype="multipart/form-data" action="{% url 'upload' page.path %}">
               {% csrf_token %}
-              {{ attachment_form.as_p }}
-              <button type="submit" class="btn btn-primary btn-large">Save</button>
+              {{ attachment_form }}
+              <button style="display: inline-block;" type="submit" class="btn btn-primary btn-large">Save File</button>
             </form>
           </div>
-          {% for attachment in attachments|slice:"5" %} <!--Create a dropdown here instead of slicing-->
-              <li>
-                {{ attachment.attachment.url }} URL:
+          <hr>
+          {% for attachment in attachments|slice:"5" %}
+            <div class="pl-2">
+              <div style="display: inline-block;">
+                <a style="display: inline-block;" target="_blank" href="{{ attachment.attachment.url }}">
+                  {% load static %}
+                  <!--{% static 'file-upload.svg' %}-->
+                  <img src="{{ attachment.attachment.filename }}" alt="Attachment" onerror="this.onerror=null; this.src='https://uxwing.com/wp-content/themes/uxwing/download/04-file-folder-type/file-upload.svg'" alt="" width="50" height="50">
+                </a>
+                <p style="display: inline-block;">{{ attachment.attachment.url }}</p>
+              </div>
+
+              <div class="pt-2 pr-2 pb-2" style="float:right;">
                 <button onclick="navigator.clipboard.writeText('{{ attachment.attachment.url }}')" class="btn btn-primary btn-large">Copy Link</button>
-                <form method="post" enctype="multipart/form-data" action="{% url 'delete' page.path attachment.id %}">
+                <form style="display: inline-block;" method="post" enctype="multipart/form-data" action="{% url 'delete' page.path attachment.id %}">
                   {% csrf_token %}
                   <button type="submit" class="btn btn-primary btn-large">Delete</button>
                 </form>
-              </li>
+              </div>
+              <hr>
+            </div>
           {% endfor %}
+          {% if attachments|length > 5 %}
+          <div class="pt-2 pr-2 pb-2" style="float: right;">
+            <button class="btn btn-primary" type="button" data-toggle="collapse" data-target="#collapser" aria-expanded="false" aria-controls="collapser">
+              Show more uploads
+            </button>
+          </div>
+          <br>
+          <br>
+          <br>
+          <div class="collapse" id="collapser">
+            {% for attachment in attachments|slice:"5:" %}
+              <div class="pl-2">
+                <div style="display: inline-block;">
+                  <a style="display: inline-block;" target="_blank" href="{{ attachment.attachment.url }}">
+                    {% load static %}
+                    <!--use {% static 'file-upload.svg' %}-->
+                    <img src="{{ attachment.attachment.url }}" alt="Attachment" onerror="this.onerror=null; this.src='https://uxwing.com/wp-content/themes/uxwing/download/04-file-folder-type/file-upload.svg'" alt="" width="50" height="50">
+                  </a>
+                  <p style="display: inline-block;">{{ attachment.attachment.url }}</p>
+                </div>
+
+                <div class="pt-2 pr-2 pb-2" style="float:right;">
+                  <button onclick="navigator.clipboard.writeText('{{ attachment.attachment.url }}')" class="btn btn-primary btn-large">Copy Link</button>
+                  <form style="display: inline-block;" method="post" enctype="multipart/form-data" action="{% url 'delete' page.path attachment.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary btn-large">Delete</button>
+                  </form>
+                </div>
+                <hr>
+              </div>
+            {% endfor %}
+          </div>
         </div>
+        {% endif %}
       <div class="col-md-9 pl-0 pr-0">
 
       </div>

@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import include, path
 from users import views as users_views
 from wiki import feeds as wiki_feeds

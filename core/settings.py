@@ -106,10 +106,16 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATIC_URL = "/static/"
+# Storage settings.
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 
-MEDIA_ROOT = "/storage"
+# Static and Media
+STATIC_URL = "/static/"
+MEDIA_URL = "/media/"
+
+STATIC_ROOT = "/storage/static"
+MEDIA_ROOT = "/storage/media"
 
 WHITENOISE_USE_FINDERS = True
 
