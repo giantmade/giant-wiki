@@ -66,5 +66,5 @@ urlpatterns += [
     path('wiki/<str:path>/edit/upload/', wiki_views.upload, name="upload"),
     path('wiki/<str:path>/edit/delete/<int:id>', wiki_views.delete, name="delete")
 
-] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 # fmt:on

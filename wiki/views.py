@@ -112,6 +112,7 @@ def upload(request, path):
 
 def delete(request, path, id):
     item = models.Attachments.objects.get(id=id)
+    item.attachment.delete()
     item.delete()
     return redirect(reverse("page", kwargs={"path": path}))
 

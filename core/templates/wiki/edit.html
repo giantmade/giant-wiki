@@ -67,7 +67,7 @@
             <form method="post" enctype="multipart/form-data" action="{% url 'upload' page.path %}">
               {% csrf_token %}
               {{ attachment_form }}
-              <button style="display: inline-block;" type="submit" class="btn btn-primary btn-large">Save File</button>
+              <button style="display: inline-block;" type="submit" class="btn btn-primary btn-large">Upload File</button>
             </form>
           </div>
           <hr>
@@ -76,8 +76,7 @@
               <div style="display: inline-block;">
                 <a style="display: inline-block;" target="_blank" href="{{ attachment.attachment.url }}">
                   {% load static %}
-                  <!--{% static 'file-upload.svg' %}-->
-                  <img src="{{ attachment.attachment.filename }}" alt="Attachment" onerror="this.onerror=null; this.src='https://uxwing.com/wp-content/themes/uxwing/download/04-file-folder-type/file-upload.svg'" alt="" width="50" height="50">
+                  <img src="{{ attachment.attachment.url }}" alt="Attachment"  alt="File Upload" onerror="this.onerror=null; this.src='{% get_media_prefix %}file-upload.svg'" width="50" height="50">
                 </a>
                 <p style="display: inline-block;">{{ attachment.attachment.url }}</p>
               </div>
@@ -107,8 +106,7 @@
                 <div style="display: inline-block;">
                   <a style="display: inline-block;" target="_blank" href="{{ attachment.attachment.url }}">
                     {% load static %}
-                    <!--use {% static 'file-upload.svg' %}-->
-                    <img src="{{ attachment.attachment.url }}" alt="Attachment" onerror="this.onerror=null; this.src='https://uxwing.com/wp-content/themes/uxwing/download/04-file-folder-type/file-upload.svg'" alt="" width="50" height="50">
+                    <img src="{{ attachment.attachment.url }}" alt="Attachment"  alt="File Upload" onerror="this.onerror=null; this.src='{% get_media_prefix %}file-upload.svg'" width="50" height="50">
                   </a>
                   <p style="display: inline-block;">{{ attachment.attachment.url }}</p>
                 </div>
