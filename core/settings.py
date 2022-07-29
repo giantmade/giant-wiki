@@ -15,8 +15,6 @@ env = environ.Env(
     SITE_TITLE=(str, "Giant Wiki"),
 )
 
-SITE_TITLE = "Giant Wiki"
-
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 SECRET_KEY = env("SECRET_KEY")
