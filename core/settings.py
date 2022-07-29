@@ -125,3 +125,5 @@ CRISPY_TEMPLATE_PACK = "bootstrap4"
 ELASTICSEARCH_DSL = {
     "default": {"hosts": os.environ.get("ELASTICSEARCH_URL", False)},
 }
+
+SITE_TITLE = env("SITE_TITLE")
