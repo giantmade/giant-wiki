@@ -76,7 +76,7 @@
               <div style="display: inline-block;">
                 <a style="display: inline-block;" target="_blank" href="{{ attachment.attachment.url }}">
                   {% load static %}
-                  <img src="{{ attachment.attachment.url }}" alt="Attachment"  alt="File Upload" onerror="this.onerror=null; this.src='{% get_media_prefix %}file-upload.svg'" width="50" height="50">
+                  <img style="height: 50px;width: 50px;" src="{{ attachment.attachment.url }}" alt="File Upload" onerror="this.style.display = 'none'">
                 </a>
                 <p style="display: inline-block;">{{ attachment.attachment.url }}</p>
               </div>
@@ -106,8 +106,8 @@
                 <div style="display: inline-block;">
                   <a style="display: inline-block;" target="_blank" href="{{ attachment.attachment.url }}">
                     {% load static %}
-                    <img src="{{ attachment.attachment.url }}" alt="Attachment"  alt="File Upload" onerror="this.onerror=null; this.src='{% get_media_prefix %}file-upload.svg'" width="50" height="50">
-                  </a>
+                    <img style="height: 50px;width: 50px;" src="{{ attachment.attachment.url }}" alt="File Upload" onerror="this.style.display = 'none'">
+                </a>
                   <p style="display: inline-block;">{{ attachment.attachment.url }}</p>
                 </div>
 
