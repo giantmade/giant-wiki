@@ -106,13 +106,14 @@ USE_TZ = True
 
 # Storage settings.
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+DEFAULT_FILE_STORAGE = "django.core.files.storage.FileSystemStorage"
 
 # Static and Media
 STATIC_URL = "/static/"
 MEDIA_URL = "/media/"
 
-STATIC_ROOT = "/storage/static"
-MEDIA_ROOT = "/storage/media"
+STATIC_ROOT = "storage/static"
+MEDIA_ROOT = "storage/media"
 
 WHITENOISE_USE_FINDERS = True
 
