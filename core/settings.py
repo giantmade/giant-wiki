@@ -9,9 +9,10 @@ env = environ.Env(
     ALLOWED_HOSTS=(list, ["*"]),
     CSRF_TRUSTED_ORIGINS=(list, []),
     CAS_ENABLED=(bool, False),
-    CAS_SERVER_URL=(str, "https://cas.example.com"),
-    CAS_VERSION=(str, "3"),
-    SITE_TITLE=(str, "Giant Wiki"),
+    CAS_SERVER_URL=(str, 'https://cas.example.com'),
+    CAS_VERSION=(str, '3'),
+    SITE_TITLE=(str, 'Giant Wiki'),
+    MENU_URL=(str, 'https://login.giantmade.net/menu/'),
 )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -125,3 +126,4 @@ ELASTICSEARCH_DSL = {
 }
 
 SITE_TITLE = env("SITE_TITLE")
+MENU_URL = env("MENU_URL")
