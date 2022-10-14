@@ -17,41 +17,76 @@
         .CodeMirror { border: none !important; height: 100%;}
         .editor-toolbar { border: none !important; }
     </style>
+
+    <!-- JQuery and Bootstrap -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+
     {% block extra_head %}{% endblock %}
 </head>
 
 <body>
 
-    <!-- Top nav -->
-    <nav class="navbar navbar-dark bg-primary">
-        <ul class="nav">
-            <li class="nav-item"><a class="nav-link text-light pl-0" href="{% url "wiki" %}">{{ site_title }}</a></li>
-        </ul>
-        <form class="form-inline my-2 my-lg-0" method="GET" action="{% url "search" %}">
-            <input class="form-control mr-sm-2" type="search" placeholder="Search" name="q">
-            <button class="btn btn-success my-2 my-sm-0" type="submit">Go</button>
-        </form>
-    </nav>
-    
-    <!-- Main body -->
-    <div class="container-fluid pl-0 pr-0">
-        {% block header %}
-        {% endblock %}
+    <div class="row">
+        <div id="mainmenu" class="d-none pr-0 mr-0"></div>
 
-        {% block body %}
-        {% endblock body %}
-    </div>
+        <div id="maincontent" class="col-12">
 
-    <div class="container-fluid border-top justify-content-center pt-3">
-        {% if request.user.is_authenticated %}
-        <p class="text-center text-light">
-            <a class="text-secondary" href="/wiki/feed">RSS</a> | <a class="text-secondary" href="{% url "history" %}">History</a> | <a class="text-secondary" href="{% url "self" %}">Settings</a> | <a class="text-secondary" href="/logout/">Log out</a>
-        </p>
-        {% endif %}
+            <!-- Top nav -->
+            <nav class="navbar navbar-dark bg-primary">
+
+                <div>
+                    <a class="navbar-brand" href="#"><i id="mainmenutoggle" class="bi bi-list text-white"></i></a> 
+                    <a class="navbar-brand" href="{% url "wiki" %}"> Wiki</a>
+                </div>
+
+                <form class="form-inline my-2 my-lg-0" method="GET" action="{% url "search" %}">
+                    <input class="form-control mr-sm-2" type="search" placeholder="Search" name="q">
+                    <button class="btn btn-success my-2 my-sm-0" type="submit">Go</button>
+                </form>
+            </nav>
+            
+            <!-- Main body -->
+            <div class="container-fluid pl-0 pr-0">
+                {% block header %}
+                {% endblock %}
+
+                {% block body %}
+                {% endblock body %}
+            </div>
+
+            <div class="container-fluid border-top justify-content-center pt-3">
+                {% if request.user.is_authenticated %}
+                <p class="text-center text-light">
+                    <a class="text-secondary" href="/wiki/feed">RSS</a> | <a class="text-secondary" href="{% url "history" %}">History</a> | <a class="text-secondary" href="{% url "self" %}">Settings</a> | <a class="text-secondary" href="/logout/">Log out</a>
+                </p>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </body>
 
 {% block extra_js %}{% endblock %}
+<script>
+    $(document).ready(function () {
+
+        $('#mainmenu').load('{{ menu_url }}', function() {
+            $('#mainmenutoggle').click(function () {
+                if ($('#mainmenu').is(":visible")) {
+                    $('#mainmenu').hide();
+                    $('#mainmenu').removeClass('col-2');
+                    $('#maincontent').removeClass('col-10');
+                    $('#maincontent').addClass('col-12');
+                    $('#maincontent').removeClass('pl-0');
+                } else {
+                    $('#mainmenu').removeClass('d-none').addClass('col-2').show();
+                    $('#maincontent').removeClass('col-12').addClass('col-10 pl-0');
+                }
+            });    
+        });
+    });
+</script>
 </html>
