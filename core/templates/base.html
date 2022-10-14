@@ -82,12 +82,8 @@
                     $('#maincontent').addClass('col-12');
                     $('#maincontent').removeClass('pl-0');
                 } else {
-                    $('#mainmenu').show();
-                    $('#mainmenu').addClass('col-2');
-                    $('#mainmenu').removeClass('d-none');
-                    $('#maincontent').removeClass('col-12');
-                    $('#maincontent').addClass('col-10');
-                    $('#maincontent').addClass('pl-0');
+                    $('#mainmenu').removeClass('d-none').addClass('col-2').show();
+                    $('#maincontent').removeClass('col-12').addClass('col-10 pl-0');
                 }
             });    
         });
