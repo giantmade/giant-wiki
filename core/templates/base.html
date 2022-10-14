@@ -40,7 +40,7 @@
 
                 <div>
                     <a class="navbar-brand" href="#"><i id="mainmenutoggle" class="bi bi-list text-white"></i></a> 
-                    <a class="navbar-brand" href="{% url "wiki" %}"> Wiki</a>
+                    <a class="navbar-brand" href="{% url "wiki" %}"> {{ site_title }}</a>
                 </div>
 
                 <form class="form-inline my-2 my-lg-0" method="GET" action="{% url "search" %}">
