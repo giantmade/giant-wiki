@@ -23,10 +23,16 @@
             </div>
         </div>
 
-        <div class="col-md-9 pl-0 pt-3 pr-0">
+        <div class="col-md-9 pl-0 pr-0">
+
+            {% if page.is_deprecated %}
+            <div class="alert alert-warning rounded-0" role="alert">
+                This page has been marked as deprecated. It may be innacurate or out-of-date.
+            </div>
+            {% endif %}
 
             <!-- Page content -->
-            <div class="ml-3 mr-3">
+            <div class="ml-3 mr-3 pt-3">
             {{ page.render|safe }}
             </div>
 

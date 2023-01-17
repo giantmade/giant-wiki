@@ -18,6 +18,7 @@ elasticsearch-dsl = ">=6.0.0,<7.0.0"
 django-elasticsearch-dsl = "6.5.0"
 django-environ = "^0.8.1"
 django-cas-ng = "^4.3.0"
+django-cors-headers = "^3.13.0"
 
 [tool.poetry.dev-dependencies]
 

@@ -6,5 +6,6 @@ def get_profile(request):
     """
 
     if request.user.is_authenticated:
-        return {'profile': models.Profile.objects.get(user=request.user)}
+        profile, _ = models.Profile.objects.get_or_create(user=request.user)
+        return {'profile': profile}
     return {'profile': False}
