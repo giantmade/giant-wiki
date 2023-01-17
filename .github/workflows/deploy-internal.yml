@@ -1,0 +1,12 @@
+---
+name: Deploy To internal.giantmade.net
+
+on: 
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    uses: giantmade/github-actions/.github/workflows/deploy-internal.yml@main
+    secrets: inherit

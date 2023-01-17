@@ -1,0 +1,13 @@
+---
+name: Build & Test
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    name: Build & Run Pytest
+    uses: giantmade/github-actions/.github/workflows/build-test.yml@main
