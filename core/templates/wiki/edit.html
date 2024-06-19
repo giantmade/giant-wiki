@@ -19,59 +19,77 @@
 
 {% block body %}
 <div class="container-fluid h-100">
+    <form method="POST" action="{% url 'edit' page.path %}" enctype="multipart/form-data" >
+        {% csrf_token %}
+        <div class="row">
 
-  <form method="POST" action="{% url "edit" page.path %}">
-    {% csrf_token %}
+            <!-- Edit form -->
+            <div class="col-md-3 border-right pt-3">
+                <!-- Status -->
+                <p>This page was last updated on {{ page.last_updated }} by {{ page.last_edited_by }}.</p>
 
-    <div class="row">
+                <!-- Page history -->
+                <p><strong>History</strong></p>
 
-    <!-- Edit form -->
+                <div class="collapse" id="historyList">
+                {% for item in history %}
+                <p><a href="{% url 'history' item.path item.id %}">{{ item.last_updated }} by {{ item.last_edited_by }}</a></p>
+                {% endfor %}
+                </div>
+                <p><a href="#historyList" data-toggle="collapse" class="btn btn-sm btn-primary">Show</a></p>
+            </div>
 
-      <div class="col-md-3 border-right pt-3">
+            <div class="col-md-9 pl-0 pr-0">
+                <div class="border-bottom">
+                    {{ form.content }}
+                </div>
 
-        <!-- Status -->
-        <p>This page was last updated on {{ page.last_updated }} by {{ page.last_edited_by }}.</p>
+                <div>
+                    <h3>Add Files</h3>
+                    {{ form.files }}
+                </div>
 
-        <!-- Page history -->
-        <p><strong>History</strong></p>
+                <div>
+                    <h3>Remove Files</h3>
+                    {% for file_upload in page.file_uploads.all %}
+                        <div id="remove-file{{ file_upload.id }}">
+                            <button hx-delete="{% url 'remove_file' file_upload.id %}"
+                            hx-target="#remove-file{{ file_upload.id }}"
+                            hx-swap="innerHTML"
+                            >Remove: {{ file_upload.file.name }}</button>
+                        </div>
+                    {% endfor %}
+                </div>
 
-        <div class="collapse" id="historyList">
-        {% for item in history %}
-          <p><a href="{% url "history" item.path item.id %}">{{ item.last_updated }} by {{ item.last_edited_by }}</a></p>
-        {% endfor %}
+                <input type="hidden" name="path" value="{{ page.path }}">
+
+                <div class="text-right pt-2 pr-2 pb-2">
+                    <a href="{% url 'page' page.path %}" class="btn btn-danger btn-large">Cancel</a>
+                    <input class="btn btn-primary btn-large" type="submit" value="Save Page">
+                </div>
+            </div>
+
         </div>
-        <p><a href="#historyList" data-toggle="collapse" class="btn btn-sm btn-primary">Show</a></p>
-
-      </div>
-
-      <div class="col-md-9 pl-0 pr-0">
-
-          <div class="border-bottom">
-            {{ form.content }}
-          </div>
-
-          <div class="text-right pt-2 pr-2 pb-2">
-            <a href="{% url "page" page.path %}" class="btn btn-danger btn-large">Cancel</a>
-            <input class="btn btn-primary btn-large" type="submit" value="Save Page">
-          </div>
-      </div>
-    </div>
-  </form>
+    </form>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
-  var simplemde = new SimpleMDE({ element: document.getElementById("id_content") });
+      var simplemde = new SimpleMDE({ element: document.getElementById("id_content") });
+      let CSRF_TOKEN = '{{ csrf_token }}';
+        document.body.addEventListener('htmx:configRequest', (event) => {
+            event.detail.headers['X-CSRFToken'] = CSRF_TOKEN;
+        })
 
-  $(document).ready(function() {
-    $('body').keydown(function (e) {
+      $(document).ready(function() {
+        $('body').keydown(function (e) {
 
-        // Detect ctrl-enter.
-        if (e.ctrlKey && e.keyCode == 13) {
-            $('form').submit();
-        }
-    });
-  });
+            // Detect ctrl-enter.
+            if (e.ctrlKey && e.keyCode == 13) {
+                $('form').submit();
+            }
+        });
+      });
 </script>
 {% endblock %}
