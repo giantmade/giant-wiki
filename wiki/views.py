@@ -1,10 +1,12 @@
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
+from django.template.response import TemplateResponse
 from django.urls import reverse
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse, HttpResponse
 from django.core.paginator import Paginator
-
-from django.contrib.auth.models import User
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from wiki.models import FileUpload
 
 from . import models, forms, documents
 
@@ -42,6 +44,7 @@ def page(request, path="index", specific_id=False):
         'page': page,
     })
 
+
 @login_required
 def edit(request, path):
     """
@@ -63,15 +66,9 @@ def edit(request, path):
         )
 
     if request.method == "POST":
-        form = forms.PageForm(request.POST, instance=page)
+        form = forms.PageForm(request.POST, request.FILES, request=request, instance=page)
         if form.is_valid():
-            # Create a new page.
-            new_page = models.Page(
-                path=path,
-                content=form.cleaned_data["content"],
-                last_edited_by=request.user
-            )
-            new_page.save()
+            form.save()
             return redirect(reverse("page", kwargs={'path': path}))
     else:
         form = forms.PageForm(instance=page)
@@ -82,6 +79,18 @@ def edit(request, path):
         'history': history,
         'form': form,
     })
+
+
+@require_http_methods(['DELETE'])
+@login_required
+def remove_file(request, file_id):
+    file = FileUpload.objects.filter(pk=file_id).first()
+    if file:
+        file.delete()
+        return HttpResponse(f"Successfully deleted file '{file}'")
+    return JsonResponse({'success': False})
+
+
 
 @login_required
 def search(request):
