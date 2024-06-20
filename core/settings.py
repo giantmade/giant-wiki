@@ -89,8 +89,8 @@ if env("CAS_ENABLED"):
     AUTHENTICATION_BACKENDS += ("django_cas_ng.backends.CASBackend",)
     CAS_SERVER_URL = env("CAS_SERVER_URL")
     CAS_VERSION = env("CAS_VERSION")
-    INSTALLED_APPS += ("django_cas_ng",)
-    MIDDLEWARE += "django_cas_ng.middleware.CASMiddleware",
+    INSTALLED_APPS += ["django_cas_ng"]
+    MIDDLEWARE += ["django_cas_ng.middleware.CASMiddleware"]
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
