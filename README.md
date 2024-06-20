@@ -11,6 +11,7 @@
 
 ## Todo
 
+- ~~Centralised login~~
 - ~~Audit for old codebase mentions.~~
 - ~~Adjust `core.home` to bounce to wiki index.~~
 - ~~Page history, and browsing older versions.~~

@@ -10,3 +10,4 @@ database.sqlite3
 database.sqlite
 .idea/
 media/
+storage/media/files

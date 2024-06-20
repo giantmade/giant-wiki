@@ -5,7 +5,7 @@
 {% block header %}
 <nav class="navbar bg-light mb-3 border-bottom">
     <div>
-        <a href="{% url "page" "index" %}">wiki</a>/<a href="{% url "history" %}">History</a>
+        <a href="{% url 'page' 'index' %}">wiki</a>/<a href="{% url 'history' %}">History</a>
     </div>
 </nav>
 {% endblock %}
@@ -20,7 +20,7 @@
             <ul>
             {% for i in items %}
                 <li><a href="{% url "page" i.path %}">{{ i.path }}</a>, updated by {{ i.last_edited_by }} on {{ i.last_updated }}</li>
-            {% endfor %}                
+            {% endfor %}
             </ul>
 
             <div class="pagination">
@@ -29,18 +29,18 @@
                         <a href="?page=1">&laquo; first</a>
                         <a href="?page={{ items.previous_page_number }}">previous</a>
                     {% endif %}
-            
+
                     <span class="current">
                         Page {{ items.number }} of {{ items.paginator.num_pages }}.
                     </span>
-            
+
                     {% if items.has_next %}
                         <a href="?page={{ items.next_page_number }}">next</a>
                         <a href="?page={{ items.paginator.num_pages }}">last &raquo;</a>
                     {% endif %}
                 </span>
             </div>
-            
+
         </div>
     </div>
 </div>

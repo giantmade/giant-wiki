@@ -14,9 +14,6 @@ RUN set -ex \
     && poetry config virtualenvs.create false \
     && poetry install --no-dev --no-root --no-interaction --no-ansi
 
-
-ENV PATH=/root/.poetry/bin:${PATH}
-
 COPY . /app/
 EXPOSE 80
 CMD gunicorn core.wsgi -b 0.0.0.0:80 --log-file -
