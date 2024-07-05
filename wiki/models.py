@@ -1,8 +1,7 @@
-import re
-
 from django.contrib.auth import models as user_models
 from django.db import models
 from markdown import markdown
+from markdown.extensions.wikilinks import WikiLinkExtension
 
 
 class Page(models.Model):
@@ -22,14 +21,16 @@ class Page(models.Model):
         """
         This renders the content.
         """
-
-        # Convert [[links]] to HTML links.
-        c = re.sub(r"\[\[(\w+)\]\]", r'<a href="/wiki/\1/">\1</a>', self.content)
-
         # Render Markdown to HTML.
-        c = markdown(c)
-
-        return c
+        # See https://python-markdown.github.io/extensions/ for info.
+        return markdown(
+            self.content,
+            extensions=[
+                "fenced_code",
+                "nl2br",
+                WikiLinkExtension(base_url="/wiki/"),
+            ],
+        )
 
 
 class Attachments(models.Model):
