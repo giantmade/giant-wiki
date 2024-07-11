@@ -1,10 +1,6 @@
 import os
-import dj_database_url
-<<<<<<< HEAD
-=======
 import environ
-from loguru import logger
->>>>>>> main
+import dj_database_url
 
 env = environ.Env(
     # Set cast type, and default values
@@ -13,9 +9,7 @@ env = environ.Env(
     CSRF_TRUSTED_ORIGINS=(list, []),
     CAS_ENABLED=(bool, False),
     CAS_SERVER_URL=(str, 'https://cas.example.com'),
-    CAS_VERSION=(str, '3'),
-    SITE_TITLE=(str, 'Giant Wiki'),
-    MENU_URL=(str, 'https://login.giantmade.net/menu/'),
+    CAS_VERSION=(str, '3')
 )
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -37,7 +31,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "crispy_forms",
     "django_elasticsearch_dsl",
-    "corsheaders",
     "core",
     "users",
     "wiki",
@@ -52,10 +45,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-<<<<<<< HEAD
-=======
-    "corsheaders.middleware.CorsMiddleware",
->>>>>>> main
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -72,8 +61,6 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "users.context_processors.get_profile",
-                "core.context_processors.get_title",
-                "core.context_processors.get_menu_url",
             ]
         },
     }
@@ -85,16 +72,16 @@ DATABASES = {}
 DATABASES["default"] = dj_database_url.parse(os.environ["DATABASE_URL"])
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
-AUTHENTICATION_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+)
 
 
 # Enable CAS for authentication if configured.
@@ -102,15 +89,8 @@ if env("CAS_ENABLED"):
     AUTHENTICATION_BACKENDS += ("django_cas_ng.backends.CASBackend",)
     CAS_SERVER_URL = env("CAS_SERVER_URL")
     CAS_VERSION = env("CAS_VERSION")
-<<<<<<< HEAD
     INSTALLED_APPS += ["django_cas_ng"]
     MIDDLEWARE += ["django_cas_ng.middleware.CASMiddleware"]
-=======
-    INSTALLED_APPS += ("django_cas_ng",)
-    MIDDLEWARE += [
-        "django_cas_ng.middleware.CASMiddleware",
-    ]
->>>>>>> main
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -118,15 +98,8 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-# Storage settings.
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# Static and Media
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
-MEDIA_URL = "/media/"
-
-STATIC_ROOT = "/storage/static"
-MEDIA_ROOT = "/storage/media"
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = "/media/"
@@ -138,14 +111,8 @@ LOGIN_URL = "/login/"
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
-ELASTICSEARCH_DSL = {
-    "default": {"hosts": os.environ.get("ELASTICSEARCH_URL", False)},
+ELASTICSEARCH_DSL={
+    'default': {
+        'hosts': os.environ.get("ELASTICSEARCH_URL", False)
+    },
 }
-
-SITE_TITLE = env("SITE_TITLE")
-MENU_URL = env("MENU_URL")
-
-CORS_ORIGIN_ALLOW_ALL = False
-CORS_ORIGIN_WHITELIST = (
-  'https://login.giantmade.net',
-)
