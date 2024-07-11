@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "crispy_forms",
     "django_elasticsearch_dsl",
+    "corsheaders",
     "core",
     "users",
     "wiki",
@@ -63,6 +64,8 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "users.context_processors.get_profile",
+                "core.context_processors.get_title",
+                "core.context_processors.get_menu_url",
             ]
         },
     }
@@ -100,6 +103,9 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
+# Storage settings.
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
 
@@ -113,8 +119,16 @@ LOGIN_URL = "/login/"
 
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
-ELASTICSEARCH_DSL={
+ELASTICSEARCH_DSL = {
     'default': {
         'hosts': os.environ.get("ELASTICSEARCH_URL", False)
     },
 }
+
+SITE_TITLE = env("SITE_TITLE")
+MENU_URL = env("MENU_URL")
+
+CORS_ORIGIN_ALLOW_ALL = False
+CORS_ORIGIN_WHITELIST = (
+  'https://login.giantmade.net',
+)
