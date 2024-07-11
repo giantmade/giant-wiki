@@ -19,6 +19,9 @@ django-elasticsearch-dsl = "6.5.0"
 django-environ = "^0.8.1"
 django-cas-ng = "^4.3.0"
 django-cors-headers = "^3.13.0"
+pytest = "^8.2.2"
+pytest-django = "^4.8.0"
+pytest-cov = "^5.0.0"
 
 [tool.poetry.dev-dependencies]
 
