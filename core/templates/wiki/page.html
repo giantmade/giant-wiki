@@ -36,12 +36,20 @@
             {{ page.render|safe }}
             </div>
 
+            <!-- Page files -->
+            <div class="ml-3 mr-3">
+                <h3>Files</h3>
+                {% for file_upload in page.file_uploads.all %}
+                    <p><a href="{{ file_upload.file.url }}" >{{ file_upload.file.name }}</a></p>
+                {% endfor %}
+            </div>
+
             <!-- Edit bar -->
             <div class="border-top d-flex align-items-center p-3">
                 <div class="flex-grow-1 text-muted">Last updated: {{ page.last_updated }} by {{ page.last_edited_by }}.</div>
                 <div>
                     <a class="btn btn-large btn-warning" href="/wiki/feed/">RSS</a>
-                    <a class="btn btn-large btn-primary" href="{% url "edit" page.path %}">Edit Page</a>
+                    <a class="btn btn-large btn-primary" href="{% url 'edit' page.path %}">Edit Page</a>
                 </div>
             </div>
         </div>

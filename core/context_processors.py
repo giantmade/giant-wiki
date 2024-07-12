@@ -1,5 +1,6 @@
 from django.conf import settings
 
+
 def get_title(request):
     """
     Append the profile to each request.

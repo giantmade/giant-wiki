@@ -21,3 +21,4 @@ services:
       - DEBUG=True
       - DATABASE_URL=sqlite:///database.sqlite
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAS_ENABLED=False

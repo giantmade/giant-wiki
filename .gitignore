@@ -9,4 +9,5 @@ database.sqlite3
 .vscode/
 database.sqlite
 .idea/
+media/
 storage/media/files

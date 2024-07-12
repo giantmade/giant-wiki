@@ -33,11 +33,12 @@ class Page(models.Model):
         )
 
 
-class Attachments(models.Model):
-    """
-    An attachment
-    """
+class FileUpload(models.Model):
+    """File associated with Page model"""
 
-    attachment = models.FileField(upload_to="files/")
-    uploaded_date = models.DateTimeField(auto_now=True)
-    is_deleted = models.BooleanField(default=False)
+    page = models.ForeignKey(Page, on_delete=models.CASCADE, related_name="file_uploads")
+    file = models.FileField(upload_to='page_files/')
+
+    def __str__(self):
+        return self.file.name
+

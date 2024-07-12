@@ -1,7 +1,6 @@
 import os
-import dj_database_url
 import environ
-from loguru import logger
+import dj_database_url
 
 env = environ.Env(
     # Set cast type, and default values
@@ -49,7 +48,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -79,16 +77,16 @@ DATABASES = {}
 DATABASES["default"] = dj_database_url.parse(os.environ["DATABASE_URL"])
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
 
-AUTHENTICATION_BACKENDS = ("django.contrib.auth.backends.ModelBackend",)
+AUTHENTICATION_BACKENDS = (
+    "django.contrib.auth.backends.ModelBackend",
+)
 
 
 # Enable CAS for authentication if configured.
@@ -96,10 +94,8 @@ if env("CAS_ENABLED"):
     AUTHENTICATION_BACKENDS += ("django_cas_ng.backends.CASBackend",)
     CAS_SERVER_URL = env("CAS_SERVER_URL")
     CAS_VERSION = env("CAS_VERSION")
-    INSTALLED_APPS += ("django_cas_ng",)
-    MIDDLEWARE += [
-        "django_cas_ng.middleware.CASMiddleware",
-    ]
+    INSTALLED_APPS += ["django_cas_ng"]
+    MIDDLEWARE += ["django_cas_ng.middleware.CASMiddleware"]
 
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -110,12 +106,11 @@ USE_TZ = True
 # Storage settings.
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-# Static and Media
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATIC_URL = "/static/"
-MEDIA_URL = "/media/"
 
-STATIC_ROOT = "/storage/static"
-MEDIA_ROOT = "/storage/media"
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_URL = "/media/"
 
 WHITENOISE_USE_FINDERS = True
 
@@ -125,7 +120,9 @@ LOGIN_URL = "/login/"
 CRISPY_TEMPLATE_PACK = "bootstrap4"
 
 ELASTICSEARCH_DSL = {
-    "default": {"hosts": os.environ.get("ELASTICSEARCH_URL", False)},
+    'default': {
+        'hosts': os.environ.get("ELASTICSEARCH_URL", False)
+    },
 }
 
 SITE_TITLE = env("SITE_TITLE")
