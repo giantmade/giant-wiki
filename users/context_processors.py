@@ -8,4 +8,5 @@ def get_profile(request):
 
     if request.user.is_authenticated:
         return {'profile': models.Profile.objects.filter(user=request.user).first()}
+
     return {'profile': False}
