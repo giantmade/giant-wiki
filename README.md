@@ -18,3 +18,7 @@
 - ~~Search.~~
 - ~~`base_no_nav.html` might be redundant.~~
 - ~~squash migrations~~
+
+## Local setup
+
+- If wishing to access local media (or static) files, a storage directory will need to be created as a child to the project root. This will house the media/ and static/.
