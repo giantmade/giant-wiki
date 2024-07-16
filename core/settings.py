@@ -1,6 +1,7 @@
 import os
 import environ
 import dj_database_url
+from pathlib import Path
 
 env = environ.Env(
     # Set cast type, and default values
@@ -14,7 +15,7 @@ env = environ.Env(
     MENU_URL=(str, 'https://login.giantmade.net/menu/'),
 )
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = Path(__file__).resolve().parents[1]
 
 SECRET_KEY = env("SECRET_KEY")
 
@@ -106,10 +107,10 @@ USE_TZ = True
 # Storage settings.
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATIC_URL = "/static/"
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = "/media/"
 
 WHITENOISE_USE_FINDERS = True
