@@ -92,7 +92,6 @@ def remove_file(request, file_id):
 
 @login_required
 def search(request):
-
     if not "q" in request.GET:
         return HttpResponseForbidden()
 
