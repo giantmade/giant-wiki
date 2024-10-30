@@ -86,8 +86,6 @@ def edit(request, path):
             "page": page,
             "history": history,
             "form": form,
-            "attachment_form": forms.AttachmentForm,
-            "attachments": models.Attachments.objects.all().order_by("-uploaded_date"),
         },
     )
 

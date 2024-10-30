@@ -13,7 +13,7 @@ class PageForm(forms.ModelForm):
 
     class Meta:
         model = models.Page
-        fields = ("path", "content", "files")
+        fields = ("path", "content", "files", "is_deprecated")
         widgets = {
             "path": forms.HiddenInput(),
         }
