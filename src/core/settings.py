@@ -44,6 +44,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.messages.context_processors.messages",
                 "core.context_processors.get_title",
+                "core.context_processors.get_sidebar_categories",
             ]
         },
     }

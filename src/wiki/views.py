@@ -29,11 +29,6 @@ def page(request, page_path: str = "index"):
     """Display a wiki page."""
     storage = get_storage_service()
 
-    # Get the sidebar
-    sidebar = storage.get_page("Sidebar")
-    if not sidebar:
-        sidebar = WikiPage(path="Sidebar", content="# Sidebar\n\n[[index|Home]]")
-
     # Get the requested page
     wiki_page = storage.get_page(page_path)
 
@@ -45,8 +40,6 @@ def page(request, page_path: str = "index"):
         request,
         "wiki/page.html",
         {
-            "sidebar": sidebar,
-            "sidebar_html": render_markdown(sidebar.content),
             "page": wiki_page,
             "page_html": render_markdown(wiki_page.content),
         },

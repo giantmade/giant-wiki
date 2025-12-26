@@ -26,6 +26,9 @@
     <!-- HTMX -->
     <script defer src="https://unpkg.com/htmx.org@1.9.10"></script>
 
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
     <!-- Custom styles -->
     <style>
         /* Markdown content styles */
@@ -63,9 +66,16 @@
         <!-- Sidebar -->
         <nav class="fixed left-0 top-0 h-full w-64 bg-gray-900 text-gray-300 overflow-y-auto">
             <!-- Logo/Title -->
-            <div class="px-4 py-4 border-b border-gray-800">
-                <a href="{% url 'wiki' %}" class="text-lg font-medium text-white hover:text-green-400 transition-colors">
-                    {{ site_title }}
+            <div class="px-6 py-4 border-b border-gray-800">
+                <a href="{% url 'wiki' %}" class="flex items-center space-x-3 text-xl font-light tracking-wide text-white hover:text-green-400 transition-colors">
+                    <svg class="h-7 w-7 flex-shrink-0" viewBox="0 0 146.84 146.84" xmlns="http://www.w3.org/2000/svg">
+                        <g fill="currentColor">
+                            <path d="m73.42 129.16c-30.74 0-55.74-25.01-55.74-55.74s25.01-55.74 55.74-55.74c14.89 0 28.89 5.8 39.42 16.33l-5.66 5.66c-9.02-9.02-21-13.98-33.75-13.98-26.32 0-47.73 21.41-47.73 47.74s21.41 47.73 47.73 47.73 47.73-21.41 47.73-47.73v-4h8.01v4c0 30.74-25.01 55.74-55.74 55.74z"></path>
+                            <path d="m73.42 146.84c-40.48 0-73.42-32.94-73.42-73.42s32.94-73.42 73.42-73.42c19.61 0 38.05 7.64 51.92 21.5l-5.66 5.66c-12.35-12.35-28.78-19.16-46.25-19.16-36.08.01-65.42 29.35-65.42 65.42s29.34 65.41 65.41 65.41 65.41-29.34 65.41-65.41v-4h8.01v4c0 40.48-32.94 73.42-73.42 73.42z"></path>
+                            <path d="m77.42 69.41-8.01 8.01h33.8c-1.96 14.69-14.58 26.06-29.8 26.06-16.58 0-30.06-13.49-30.06-30.06s13.49-30.06 30.06-30.06c8.03 0 15.58 3.13 21.26 8.8l5.66-5.66c-7.19-7.19-16.75-11.15-26.92-11.15-20.99 0-38.07 17.08-38.07 38.07s17.08 38.07 38.07 38.07 38.07-17.08 38.07-38.07v-4h-34.07z"></path>
+                        </g>
+                    </svg>
+                    <span>Wiki</span>
                 </a>
             </div>
 
@@ -81,23 +91,47 @@
                 </form>
             </div>
 
-            <!-- Sidebar content from wiki -->
-            <div class="px-4 py-4 sidebar-content text-sm">
+            <!-- Sidebar navigation -->
+            <div class="px-4 py-4 text-sm flex-1 overflow-y-auto">
                 {% block sidebar %}
-                {% if sidebar_html %}
-                    {{ sidebar_html|safe }}
-                {% else %}
-                    <p class="text-gray-500">No sidebar content</p>
-                {% endif %}
+                {% for category in sidebar_categories %}
+                <div class="mb-4" x-data="{ open: {{ category.is_expanded|yesno:'true,false' }} }">
+                    <button
+                        @click="open = !open"
+                        class="flex items-center justify-between w-full text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2 hover:text-gray-300"
+                    >
+                        <span>{{ category.name }}</span>
+                        <svg
+                            class="w-4 h-4 transition-transform"
+                            :class="{ 'rotate-90': open }"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <ul x-show="open" x-collapse class="space-y-1">
+                        {% for item in category.items %}
+                        <li>
+                            <a
+                                href="{% url 'page' page_path=item.path %}"
+                                class="block py-1 px-2 rounded {% if item.is_current %}bg-gray-800 text-green-400{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}"
+                            >
+                                {{ item.title }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% empty %}
+                <p class="text-gray-500">No pages yet</p>
+                {% endfor %}
                 {% endblock %}
             </div>
 
             <!-- Footer links -->
             <div class="absolute bottom-0 left-0 right-0 px-4 py-3 border-t border-gray-800 bg-gray-900">
-                <div class="flex items-center justify-between text-xs text-gray-500">
+                <div class="text-xs text-gray-500">
                     <a href="{% url 'history' %}" class="hover:text-gray-300">History</a>
-                    <span>&bull;</span>
-                    <a href="{% url 'page' page_path='Sidebar' %}" class="hover:text-gray-300">Edit Sidebar</a>
                 </div>
             </div>
         </nav>

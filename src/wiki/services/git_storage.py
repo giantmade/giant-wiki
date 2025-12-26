@@ -1,10 +1,11 @@
 """Git-based storage backend for wiki pages."""
 
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+import frontmatter
 from django.conf import settings
 
 
@@ -15,11 +16,21 @@ class WikiPage:
     path: str
     content: str
     last_modified: datetime | None = None
+    metadata: dict = field(default_factory=dict)
 
     @property
     def title(self) -> str:
-        """Return the page title (last segment of path)."""
+        """Return the page title (from frontmatter or path)."""
+        if self.metadata and "title" in self.metadata:
+            return self.metadata["title"]
         return self.path.split("/")[-1] if "/" in self.path else self.path
+
+    @property
+    def display_metadata(self) -> dict:
+        """Return metadata suitable for display (excludes title)."""
+        if not self.metadata:
+            return {}
+        return {k: v for k, v in self.metadata.items() if k not in ("title",)}
 
 
 class GitStorageService:
@@ -59,11 +70,19 @@ class GitStorageService:
         if not file_path.exists():
             return None
 
-        content = file_path.read_text(encoding="utf-8")
+        raw_content = file_path.read_text(encoding="utf-8")
         stat = file_path.stat()
         last_modified = datetime.fromtimestamp(stat.st_mtime)
 
-        return WikiPage(path=path, content=content, last_modified=last_modified)
+        # Parse frontmatter
+        post = frontmatter.loads(raw_content)
+
+        return WikiPage(
+            path=path,
+            content=post.content,
+            last_modified=last_modified,
+            metadata=dict(post.metadata) if post.metadata else {},
+        )
 
     def save_page(self, path: str, content: str) -> WikiPage:
         """Write a page to the local repository."""
