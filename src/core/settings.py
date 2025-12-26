@@ -86,6 +86,9 @@ MEDIA_ROOT = VAR_DIR / "media"
 # Site configuration
 SITE_TITLE = config("SITE_TITLE", default="Giant Wiki")
 
+# Use cookie-based messages (no session required)
+MESSAGE_STORAGE = "django.contrib.messages.storage.cookie.CookieStorage"
+
 # Git storage configuration
 WIKI_REPO_PATH = Path(config("WIKI_REPO_PATH", default=str(VAR_DIR / "repo")))
 WIKI_REPO_URL = config("WIKI_REPO_URL", default="")
