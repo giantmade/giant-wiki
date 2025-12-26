@@ -1,24 +1,57 @@
-version: '3'
-    
 services:
-  elasticsearch:
-    image: elasticsearch:6.8.5
-    ports:
-      - 9200:9200
-    environment:
-      - discovery.type=single-node
   web:
-    build: .
-    command: python manage.py runserver 0.0.0.0:8000
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    command: uv run python manage.py runserver 0.0.0.0:8000
+    working_dir: /app/src
     volumes:
-      - .:/app
+      - ./src:/app/src:z
+      - ./var:/app/var:z
     ports:
       - "8000:8000"
-    depends_on:
-      - elasticsearch
     environment:
-      - SECRET_KEY=development-secret
+      - SECRET_KEY=${SECRET_KEY:-development-secret-key-change-me}
       - DEBUG=True
-      - DATABASE_URL=sqlite:///database.sqlite
-      - ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAS_ENABLED=False
+      - DATABASE_URL=sqlite:////app/var/data/wiki.db
+      - WIKI_REPO_PATH=/app/var/repo
+      - WIKI_REPO_URL=${WIKI_REPO_URL:-}
+      - CELERY_BROKER_URL=redis://cache:6379/1
+      - CELERY_RESULT_BACKEND=redis://cache:6379/1
+      - SITE_TITLE=${SITE_TITLE:-Giant Wiki}
+    depends_on:
+      cache:
+        condition: service_healthy
+
+  worker:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: dev.Dockerfile
+    command: uv run celery -A core worker -l INFO --concurrency=2
+    working_dir: /app/src
+    volumes:
+      - ./src:/app/src:z
+      - ./var:/app/var:z
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-development-secret-key-change-me}
+      - DEBUG=True
+      - DATABASE_URL=sqlite:////app/var/data/wiki.db
+      - WIKI_REPO_PATH=/app/var/repo
+      - WIKI_REPO_URL=${WIKI_REPO_URL:-}
+      - CELERY_BROKER_URL=redis://cache:6379/1
+      - CELERY_RESULT_BACKEND=redis://cache:6379/1
+    depends_on:
+      cache:
+        condition: service_healthy
+
+  cache:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 5

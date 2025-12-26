@@ -1,24 +1,47 @@
-# giant-wiki
+# Giant Wiki
 
-## Goals
+Internal documentation wiki with Git-based storage, deployed privately via Tailscale.
 
-- A more reactive documentation solution than writing and publishing markdown:
-    - The publish workflow requires Github access.
-    - The publish workflow is a slow cycle; friction causes edits to be deferred or lost.
-- A more accessible documentation solution that a Github Wiki:
-    - Github wikis are intimidating for non-technical users.
-    - There are occasions when permission handling on Github has prevented us from sharing useful information in the wiki.
+## Features
 
-## Todo
+- **Git-based storage** - Wiki pages stored as markdown files in a Git repository
+- **Full-text search** - SQLite FTS5 for fast, ephemeral search index
+- **Background sync** - Celery tasks sync changes to Git remote
+- **Private access** - Tailscale boundary, no authentication required
+- **Modern UI** - Tailwind CSS with Giant Tool Design System
 
-- ~~Centralised login~~
-- ~~Audit for old codebase mentions.~~
-- ~~Adjust `core.home` to bounce to wiki index.~~
-- ~~Page history, and browsing older versions.~~
-- ~~Search.~~
-- ~~`base_no_nav.html` might be redundant.~~
-- ~~squash migrations~~
+## Quick Start
 
-## Local setup
+```bash
+# Initial setup
+make install
 
-- If wishing to access local media (or static) files, a storage directory will need to be created as a child to the project root. This will house the media/ and static/.
+# Start development server
+make server
+
+# Run tests
+make test
+```
+
+## Development
+
+See [CLAUDE.md](CLAUDE.md) for detailed project documentation.
+
+### Key Commands
+
+| Command | Purpose |
+|---------|---------|
+| `make server` | Start all services |
+| `make test` | Run tests |
+| `make format` | Lint and format code |
+| `make logs` | Follow service logs |
+
+## Deployment
+
+Deployed to Railway with Tailscale forwarder:
+
+1. Configure `WIKI_REPO_URL` pointing to content repository
+2. Set `GIT_SSH_KEY` (base64-encoded) for Git authentication
+3. Deploy web and worker services
+
+Access via Tailscale network only.

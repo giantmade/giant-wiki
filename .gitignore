@@ -1,13 +1,46 @@
-.coverage
-reports/
-__pycache__
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
 env/
+venv/
+
+# Environment
+.env
+
+# Django
+*.log
+staticfiles/
+mediafiles/
+
+# Runtime data
 var/
-sqlite.db
-database.sqlite3
-.vscode/settings.json
-.vscode/
-database.sqlite
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Testing
+.testmondata
+.pytest_cache/
+
+# IDE
 .idea/
-media/
-storage/media/files
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
