@@ -1,0 +1,9 @@
+[build]
+builder = "RAILPACK"
+
+[deploy]
+startCommand = "scripts/railway-start.sh"
+preDeployCommand = "cd src && python manage.py collectstatic --noinput && python manage.py rebuild_search"
+healthcheckPath = "/health/"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"

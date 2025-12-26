@@ -1,0 +1,6 @@
+[build]
+builder = "RAILPACK"
+
+[deploy]
+startCommand = "scripts/railway-worker.sh"
+restartPolicyType = "ON_FAILURE"
