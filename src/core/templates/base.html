@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% endblock %} | {{ site_title }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+
+    <!-- Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwindcss.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- HTMX -->
+    <script defer src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+    <!-- Custom styles -->
+    <style>
+        /* Markdown content styles */
+        .prose h1 { font-size: 2rem; font-weight: 300; margin-bottom: 1rem; color: #1f2937; }
+        .prose h2 { font-size: 1.5rem; font-weight: 300; margin-top: 2rem; margin-bottom: 0.75rem; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; }
+        .prose h3 { font-size: 1.25rem; font-weight: 500; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1f2937; }
+        .prose p { margin-bottom: 1rem; line-height: 1.75; }
+        .prose ul, .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+        .prose li { margin-bottom: 0.25rem; }
+        .prose a { color: #22c55e; text-decoration: none; }
+        .prose a:hover { text-decoration: underline; }
+        .prose code { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; }
+        .prose pre { background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; }
+        .prose pre code { background: none; padding: 0; }
+        .prose blockquote { border-left: 4px solid #22c55e; padding-left: 1rem; margin: 1rem 0; color: #6b7280; font-style: italic; }
+        .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+        .prose th, .prose td { border: 1px solid #e5e7eb; padding: 0.5rem 1rem; text-align: left; }
+        .prose th { background: #f9fafb; font-weight: 500; }
+        .prose mark { background: #fef08a; padding: 0 0.125rem; }
+
+        /* Sidebar markdown */
+        .sidebar-content a { color: #d1d5db; }
+        .sidebar-content a:hover { color: #22c55e; }
+        .sidebar-content h1, .sidebar-content h2, .sidebar-content h3 { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .sidebar-content ul { list-style: none; padding: 0; }
+        .sidebar-content li { margin-bottom: 0.25rem; }
+        .sidebar-content p { margin-bottom: 0.5rem; }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="font-sans font-light bg-gray-50 text-gray-900">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <nav class="fixed left-0 top-0 h-full w-64 bg-gray-900 text-gray-300 overflow-y-auto">
+            <!-- Logo/Title -->
+            <div class="px-4 py-4 border-b border-gray-800">
+                <a href="{% url 'wiki' %}" class="text-lg font-medium text-white hover:text-green-400 transition-colors">
+                    {{ site_title }}
+                </a>
+            </div>
+
+            <!-- Search -->
+            <div class="px-4 py-3 border-b border-gray-800">
+                <form method="GET" action="{% url 'search' %}">
+                    <input
+                        type="search"
+                        name="q"
+                        placeholder="Search..."
+                        class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                </form>
+            </div>
+
+            <!-- Sidebar content from wiki -->
+            <div class="px-4 py-4 sidebar-content text-sm">
+                {% block sidebar %}
+                {% if sidebar_html %}
+                    {{ sidebar_html|safe }}
+                {% else %}
+                    <p class="text-gray-500">No sidebar content</p>
+                {% endif %}
+                {% endblock %}
+            </div>
+
+            <!-- Footer links -->
+            <div class="absolute bottom-0 left-0 right-0 px-4 py-3 border-t border-gray-800 bg-gray-900">
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                    <a href="{% url 'history' %}" class="hover:text-gray-300">History</a>
+                    <span>&bull;</span>
+                    <a href="{% url 'page' page_path='Sidebar' %}" class="hover:text-gray-300">Edit Sidebar</a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="flex-1 ml-64">
+            {% block header %}{% endblock %}
+
+            <div class="p-6">
+                {% block body %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

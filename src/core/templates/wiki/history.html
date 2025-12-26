@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}History{% endblock %}
+
+{% block sidebar %}
+<div class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-3">History</div>
+<p class="text-gray-400 text-sm">Recent changes from Git commits</p>
+{% endblock %}
+
+{% block header %}
+<div class="bg-white border-b border-gray-200 px-6 py-4">
+    <h1 class="text-2xl font-light text-gray-900">Recent Changes</h1>
+    <p class="text-sm text-gray-500 mt-1">History of wiki edits</p>
+</div>
+{% endblock %}
+
+{% block body %}
+<div class="bg-white rounded-lg border border-gray-200">
+    {% for change in changes %}
+    <div class="p-4 border-b border-gray-100 last:border-b-0">
+        <div class="flex items-start justify-between">
+            <div>
+                <p class="text-sm font-medium text-gray-900">{{ change.message }}</p>
+                <p class="text-xs text-gray-500 mt-1">{{ change.date }}</p>
+            </div>
+            <span class="text-xs text-gray-400 font-mono">{{ change.sha|slice:":7" }}</span>
+        </div>
+        {% if change.files %}
+        <div class="mt-2 flex flex-wrap gap-2">
+            {% for file in change.files %}
+            <a
+                href="{% url 'page' page_path=file %}"
+                class="inline-flex items-center px-2 py-1 bg-gray-100 hover:bg-green-100 text-gray-700 hover:text-green-700 rounded text-xs transition-colors"
+            >
+                {{ file }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% empty %}
+    <div class="p-8 text-center">
+        <svg class="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p class="text-gray-500">No history available</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

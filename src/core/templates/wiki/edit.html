@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.css">
+<script src="https://cdn.jsdelivr.net/simplemde/latest/simplemde.min.js"></script>
+<style>
+    .CodeMirror { height: calc(100vh - 300px); min-height: 400px; border: 1px solid #e5e7eb; border-radius: 0.5rem; }
+    .editor-toolbar { border: 1px solid #e5e7eb; border-bottom: none; border-radius: 0.5rem 0.5rem 0 0; background: #f9fafb; }
+    .editor-toolbar a { color: #374151 !important; }
+    .editor-toolbar a:hover { background: #e5e7eb !important; }
+    .editor-toolbar.fullscreen { background: #fff; }
+</style>
+{% endblock %}
+
+{% block title %}Edit: {{ page.path }}{% endblock %}
+
+{% block sidebar %}
+<div class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-3">Editing</div>
+<p class="text-gray-300 text-sm mb-4">{{ page.path }}</p>
+
+{% if attachments %}
+<div class="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2 mt-6">Attachments</div>
+<ul class="text-sm">
+    {% for filename in attachments %}
+    <li class="text-gray-400">{{ filename }}</li>
+    {% endfor %}
+</ul>
+{% endif %}
+
+<div class="mt-6">
+    <a href="{% url 'page' page_path=page.path %}" class="text-gray-400 hover:text-white text-sm">
+        &larr; Back to page
+    </a>
+</div>
+{% endblock %}
+
+{% block header %}
+<div class="bg-white border-b border-gray-200 px-6 py-4">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-light text-gray-900">
+                {% if page.content %}Edit{% else %}Create{% endif %}: {{ page.path }}
+            </h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a
+                href="{% url 'page' page_path=page.path %}"
+                class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors"
+            >
+                Cancel
+            </a>
+            <button
+                type="submit"
+                form="edit-form"
+                class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Save
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block body %}
+<form id="edit-form" method="POST" action="{% url 'edit' page_path=page.path %}">
+    {% csrf_token %}
+    <div class="bg-white rounded-lg border border-gray-200 p-4">
+        <textarea
+            id="content-editor"
+            name="content"
+            class="w-full"
+        >{{ page.content }}</textarea>
+    </div>
+
+    <p class="text-sm text-gray-500 mt-3">
+        <kbd class="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs">Ctrl</kbd> +
+        <kbd class="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs">Enter</kbd>
+        to save
+    </p>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    var simplemde = new SimpleMDE({
+        element: document.getElementById("content-editor"),
+        spellChecker: false,
+        autosave: {
+            enabled: true,
+            uniqueId: "wiki-{{ page.path }}",
+            delay: 1000,
+        },
+        toolbar: [
+            "bold", "italic", "heading", "|",
+            "quote", "unordered-list", "ordered-list", "|",
+            "link", "image", "table", "|",
+            "preview", "side-by-side", "fullscreen", "|",
+            "guide"
+        ]
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.key === 'Enter') {
+            document.getElementById('edit-form').submit();
+        }
+    });
+</script>
+{% endblock %}
