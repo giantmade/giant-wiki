@@ -1,14 +1,20 @@
 """Wiki views."""
 
-from django.http import HttpResponseBadRequest
+import logging
+
+from django.contrib import messages
+from django.http import HttpResponseBadRequest, HttpResponseNotFound
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from markdown import markdown
 from markdown.extensions.wikilinks import WikiLinkExtension
 
-from .services.git_storage import WikiPage, get_storage_service
+from .services.git_storage import InvalidPathError, WikiPage, get_storage_service
 from .services.search import get_search_service
+from .services.sidebar import invalidate_sidebar_cache
 from .tasks import sync_to_remote
+
+logger = logging.getLogger(__name__)
 
 
 def render_markdown(content: str) -> str:
@@ -29,8 +35,10 @@ def page(request, page_path: str = "index"):
     """Display a wiki page."""
     storage = get_storage_service()
 
-    # Get the requested page
-    wiki_page = storage.get_page(page_path)
+    try:
+        wiki_page = storage.get_page(page_path)
+    except InvalidPathError:
+        return HttpResponseNotFound("Invalid page path")
 
     # If page doesn't exist, redirect to edit
     if not wiki_page:
@@ -50,25 +58,36 @@ def edit(request, page_path: str):
     """Edit a wiki page."""
     storage = get_storage_service()
 
-    # Get existing page or create empty one
-    wiki_page = storage.get_page(page_path)
+    try:
+        wiki_page = storage.get_page(page_path)
+    except InvalidPathError:
+        return HttpResponseNotFound("Invalid page path")
+
     if not wiki_page:
         wiki_page = WikiPage(path=page_path, content="")
 
     if request.method == "POST":
         content = request.POST.get("content", "")
 
-        # Save the page
-        storage.save_page(page_path, content)
+        try:
+            storage.save_page(page_path, content)
 
-        # Update search index (inline for low-volume wiki)
-        search = get_search_service()
-        search.add_page(page_path, content)
+            # Update search index
+            search_service = get_search_service()
+            search_service.add_page(page_path, content)
 
-        # Queue background sync to Git remote
-        sync_to_remote.delay(f"Update: {page_path}")
+            # Invalidate sidebar cache (new page may have been added)
+            invalidate_sidebar_cache()
 
-        return redirect(reverse("page", kwargs={"page_path": page_path}))
+            # Queue background sync to Git remote
+            sync_to_remote.delay(f"Update: {page_path}")
+
+            messages.success(request, "Page saved successfully.")
+            return redirect(reverse("page", kwargs={"page_path": page_path}))
+
+        except OSError as e:
+            logger.error("Failed to save page %s: %s", page_path, e)
+            messages.error(request, "Failed to save page. Please try again.")
 
     # Get list of attachments
     attachments = storage.list_attachments(page_path)

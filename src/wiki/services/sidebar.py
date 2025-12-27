@@ -3,7 +3,12 @@
 from dataclasses import dataclass
 from typing import NamedTuple
 
+from django.core.cache import cache
+
 from .git_storage import get_storage_service
+
+SIDEBAR_CACHE_KEY = "wiki_sidebar_pages"
+SIDEBAR_CACHE_TTL = 300  # 5 minutes
 
 
 class SidebarItem(NamedTuple):
@@ -24,6 +29,26 @@ class SidebarCategory:
     is_expanded: bool
 
 
+def humanize_slug(slug: str) -> str:
+    """Convert a slug to human-readable title case."""
+    return slug.replace("-", " ").replace("_", " ").title()
+
+
+def invalidate_sidebar_cache() -> None:
+    """Invalidate the sidebar cache (call after page edits)."""
+    cache.delete(SIDEBAR_CACHE_KEY)
+
+
+def _get_page_list() -> list[str]:
+    """Get list of pages, with caching."""
+    pages = cache.get(SIDEBAR_CACHE_KEY)
+    if pages is None:
+        storage = get_storage_service()
+        pages = storage.list_pages()
+        cache.set(SIDEBAR_CACHE_KEY, pages, SIDEBAR_CACHE_TTL)
+    return pages
+
+
 def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCategory]:
     """
     Build sidebar categories from page listing.
@@ -32,8 +57,7 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
     - Root-level pages go in "General" section
     - Expands category containing current page
     """
-    storage = get_storage_service()
-    pages = storage.list_pages()
+    pages = _get_page_list()
 
     # Exclude special pages
     excluded = {"Sidebar"}
@@ -52,7 +76,7 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
             categories[category_slug] = []
 
         # Title is the last segment, humanized
-        title = page_path.split("/")[-1].replace("-", " ").replace("_", " ").title()
+        title = humanize_slug(page_path.split("/")[-1])
         categories[category_slug].append((page_path, title))
 
     # Determine which category to expand
@@ -82,7 +106,7 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
 
     # Other categories alphabetically
     for slug in sorted(k for k in categories if k != "_general"):
-        name = slug.replace("-", " ").replace("_", " ").title()
+        name = humanize_slug(slug)
         items = [
             SidebarItem(path=p, title=t, is_current=p == current_path)
             for p, t in sorted(categories[slug], key=lambda x: x[1])
