@@ -1,5 +1,6 @@
 """Git-based storage backend for wiki pages."""
 
+import logging
 import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -7,6 +8,40 @@ from pathlib import Path
 
 import frontmatter
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+
+class InvalidPathError(ValueError):
+    """Raised when a page path contains invalid characters."""
+
+    pass
+
+
+def validate_path(path: str) -> str:
+    """Validate and normalize a page path.
+
+    Raises InvalidPathError if path contains directory traversal or invalid characters.
+    """
+    if not path:
+        raise InvalidPathError("Path cannot be empty")
+
+    # Normalize the path
+    path = path.strip("/")
+
+    # Check for directory traversal attempts
+    if ".." in path:
+        raise InvalidPathError("Path cannot contain '..'")
+
+    # Check for absolute paths
+    if path.startswith("/"):
+        raise InvalidPathError("Path cannot be absolute")
+
+    # Check for null bytes
+    if "\x00" in path:
+        raise InvalidPathError("Path cannot contain null bytes")
+
+    return path
 
 
 @dataclass
@@ -66,6 +101,7 @@ class GitStorageService:
 
     def get_page(self, path: str) -> WikiPage | None:
         """Read a page from the local repository."""
+        path = validate_path(path)
         file_path = self.pages_path / f"{path}.md"
         if not file_path.exists():
             return None
@@ -86,6 +122,7 @@ class GitStorageService:
 
     def save_page(self, path: str, content: str) -> WikiPage:
         """Write a page to the local repository."""
+        path = validate_path(path)
         file_path = self.pages_path / f"{path}.md"
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(content, encoding="utf-8")
@@ -94,6 +131,7 @@ class GitStorageService:
 
     def delete_page(self, path: str) -> bool:
         """Delete a page from the local repository."""
+        path = validate_path(path)
         file_path = self.pages_path / f"{path}.md"
         if file_path.exists():
             file_path.unlink()
@@ -114,6 +152,10 @@ class GitStorageService:
 
     def get_attachment_path(self, page_path: str, filename: str) -> Path:
         """Get the filesystem path for an attachment."""
+        page_path = validate_path(page_path)
+        # Also validate filename doesn't contain traversal
+        if ".." in filename or "/" in filename or "\x00" in filename:
+            raise InvalidPathError("Invalid attachment filename")
         return self.attachments_path / page_path / filename
 
     def save_attachment(self, page_path: str, filename: str, content: bytes) -> Path:
@@ -125,6 +167,7 @@ class GitStorageService:
 
     def list_attachments(self, page_path: str) -> list[str]:
         """List all attachments for a page."""
+        page_path = validate_path(page_path)
         attachments_dir = self.attachments_path / page_path
         if not attachments_dir.exists():
             return []
@@ -175,7 +218,13 @@ class GitStorageService:
                 )
 
             return True
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as e:
+            logger.error(
+                "Git commit_and_push failed: %s (stdout: %s, stderr: %s)",
+                e,
+                e.stdout,
+                e.stderr,
+            )
             return False
 
     def pull(self) -> bool:
@@ -197,7 +246,13 @@ class GitStorageService:
                 check=True,
             )
             return True
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as e:
+            logger.error(
+                "Git pull failed: %s (stdout: %s, stderr: %s)",
+                e,
+                e.stdout,
+                e.stderr,
+            )
             return False
 
     def get_recent_changes(self, limit: int = 50) -> list[dict]:
