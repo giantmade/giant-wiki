@@ -38,6 +38,7 @@ Always use Makefile commands:
 | `make ps` | Show service status |
 | `make rebuild-search` | Rebuild FTS index |
 | `make sync-git` | Sync with Git remote |
+| `make clone-content` | Clone wiki content repo for dev |
 
 ## Project Structure
 
@@ -84,7 +85,8 @@ attachments/
     file.png
 ```
 
-- Local development: `var/repo/` (initialized as local git repo)
+- Local development: `var/repo/` (initialized as empty local git repo)
+- With real data: Set `WIKI_REPO_URL` in `.env`, run `make clone-content`
 - Production: Cloned from `WIKI_REPO_URL` environment variable
 
 ## Environment Variables
@@ -96,6 +98,7 @@ attachments/
 | `SITE_TITLE` | Wiki title |
 | `WIKI_REPO_URL` | Git repo URL for content |
 | `WIKI_REPO_PATH` | Local path for repo |
+| `WIKI_REPO_BRANCH` | Git branch to use (optional, defaults to repo default) |
 | `CELERY_BROKER_URL` | Redis URL for Celery |
 | `GIT_SSH_KEY` | Base64-encoded SSH key (production) |
 

@@ -71,8 +71,9 @@ class WikiPage:
 class GitStorageService:
     """Service for reading/writing wiki pages from a Git repository."""
 
-    def __init__(self, repo_path: Path | None = None):
+    def __init__(self, repo_path: Path | None = None, branch: str | None = None):
         self.repo_path = Path(repo_path or settings.WIKI_REPO_PATH)
+        self.branch = branch or getattr(settings, "WIKI_REPO_BRANCH", "") or ""
         self.pages_path = self.repo_path / "pages"
         self.attachments_path = self.repo_path / "attachments"
 
@@ -84,8 +85,14 @@ class GitStorageService:
         if not (self.repo_path / ".git").exists():
             repo_url = settings.WIKI_REPO_URL
             if repo_url:
+                # Build clone command with optional branch
+                clone_cmd = ["git", "clone"]
+                if self.branch:
+                    clone_cmd.extend(["--branch", self.branch])
+                clone_cmd.extend([repo_url, "."])
+
                 result = subprocess.run(
-                    ["git", "clone", repo_url, "."],
+                    clone_cmd,
                     cwd=self.repo_path,
                     capture_output=True,
                     text=True,
@@ -210,8 +217,11 @@ class GitStorageService:
                 text=True,
             )
             if result.stdout.strip():
+                push_cmd = ["git", "push"]
+                if self.branch:
+                    push_cmd.extend(["origin", self.branch])
                 subprocess.run(
-                    ["git", "push"],
+                    push_cmd,
                     cwd=self.repo_path,
                     capture_output=True,
                     check=True,
@@ -239,8 +249,11 @@ class GitStorageService:
             if not result.stdout.strip():
                 return True  # No remote, nothing to pull
 
+            pull_cmd = ["git", "pull", "--rebase"]
+            if self.branch:
+                pull_cmd.extend(["origin", self.branch])
             subprocess.run(
-                ["git", "pull", "--rebase"],
+                pull_cmd,
                 cwd=self.repo_path,
                 capture_output=True,
                 check=True,

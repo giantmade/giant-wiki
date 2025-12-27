@@ -94,6 +94,7 @@ MESSAGE_STORAGE = "django.contrib.messages.storage.cookie.CookieStorage"
 # Git storage configuration
 WIKI_REPO_PATH = Path(config("WIKI_REPO_PATH", default=str(VAR_DIR / "repo")))
 WIKI_REPO_URL = config("WIKI_REPO_URL", default="")
+WIKI_REPO_BRANCH = config("WIKI_REPO_BRANCH", default="")
 
 # Celery configuration
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
