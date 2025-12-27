@@ -108,7 +108,7 @@ class SearchService:
                     ORDER BY score
                     LIMIT ?
                 """,
-                    (f'"{safe_query}"', limit),
+                    (safe_query, limit),
                 )
 
                 return [SearchResult(path=row[0], snippet=row[1], score=row[2]) for row in cursor.fetchall()]
