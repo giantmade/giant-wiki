@@ -4,8 +4,8 @@ set -e
 # Setup SSH key if provided
 if [ -n "$GIT_SSH_KEY" ]; then
     mkdir -p ~/.ssh
-    echo "$GIT_SSH_KEY" | base64 -d > ~/.ssh/id_ed25519
-    chmod 600 ~/.ssh/id_ed25519
+    echo "$GIT_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
+    chmod 600 ~/.ssh/id_rsa
     ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
 fi
 

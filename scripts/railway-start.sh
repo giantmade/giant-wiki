@@ -4,8 +4,8 @@ set -e
 # Setup SSH key if provided
 if [ -n "$GIT_SSH_KEY" ]; then
     mkdir -p ~/.ssh
-    echo "$GIT_SSH_KEY" | base64 -d > ~/.ssh/id_ed25519
-    chmod 600 ~/.ssh/id_ed25519
+    echo "$GIT_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
+    chmod 600 ~/.ssh/id_rsa
     ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
 fi
 
@@ -13,7 +13,11 @@ fi
 if [ -n "$WIKI_REPO_URL" ]; then
     if [ ! -d "$WIKI_REPO_PATH/.git" ]; then
         echo "Cloning wiki content repository..."
-        git clone "$WIKI_REPO_URL" "$WIKI_REPO_PATH"
+        if [ -n "$WIKI_REPO_BRANCH" ]; then
+            git clone --branch "$WIKI_REPO_BRANCH" "$WIKI_REPO_URL" "$WIKI_REPO_PATH"
+        else
+            git clone "$WIKI_REPO_URL" "$WIKI_REPO_PATH"
+        fi
     else
         echo "Pulling latest wiki content..."
         cd "$WIKI_REPO_PATH" && git pull --rebase || true
