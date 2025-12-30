@@ -3,7 +3,7 @@
 import logging
 import subprocess
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 import frontmatter
@@ -44,6 +44,19 @@ def validate_path(path: str) -> str:
     return path
 
 
+def get_metadata_field_type(value) -> str:
+    """Determine the appropriate HTML input type for a metadata value."""
+    if isinstance(value, bool):
+        return "checkbox"
+    if isinstance(value, datetime):
+        return "datetime-local"
+    if isinstance(value, date):
+        return "date"
+    if isinstance(value, int | float):
+        return "number"
+    return "text"
+
+
 @dataclass
 class WikiPage:
     """Represents a wiki page."""
@@ -66,6 +79,42 @@ class WikiPage:
         if not self.metadata:
             return {}
         return {k: v for k, v in self.metadata.items() if k not in ("title",)}
+
+    @property
+    def editable_metadata(self) -> list[dict]:
+        """Return metadata fields with type info for form rendering."""
+        if not self.metadata:
+            return []
+
+        fields = []
+        for key, value in self.metadata.items():
+            if key == "title":
+                continue  # Title shown in header, not properties panel
+
+            field_type = get_metadata_field_type(value)
+
+            # Format value for HTML input
+            if isinstance(value, datetime):
+                formatted_value = value.strftime("%Y-%m-%dT%H:%M")
+            elif isinstance(value, date):
+                formatted_value = value.strftime("%Y-%m-%d")
+            elif isinstance(value, bool):
+                formatted_value = value  # Keep as bool for checkbox
+            elif isinstance(value, list):
+                formatted_value = ", ".join(str(v) for v in value)
+            else:
+                formatted_value = str(value)
+
+            fields.append(
+                {
+                    "key": key,
+                    "label": key.replace("_", " ").title(),
+                    "type": field_type,
+                    "value": formatted_value,
+                }
+            )
+
+        return fields
 
 
 class GitStorageService:
@@ -127,14 +176,27 @@ class GitStorageService:
             metadata=dict(post.metadata) if post.metadata else {},
         )
 
-    def save_page(self, path: str, content: str) -> WikiPage:
+    def save_page(self, path: str, content: str, metadata: dict | None = None) -> WikiPage:
         """Write a page to the local repository."""
         path = validate_path(path)
         file_path = self.pages_path / f"{path}.md"
         file_path.parent.mkdir(parents=True, exist_ok=True)
-        file_path.write_text(content, encoding="utf-8")
 
-        return WikiPage(path=path, content=content, last_modified=datetime.now())
+        # Combine content and metadata using frontmatter
+        if metadata:
+            post = frontmatter.Post(content, **metadata)
+            raw_content = frontmatter.dumps(post)
+        else:
+            raw_content = content
+
+        file_path.write_text(raw_content, encoding="utf-8")
+
+        return WikiPage(
+            path=path,
+            content=content,
+            last_modified=datetime.now(),
+            metadata=metadata or {},
+        )
 
     def delete_page(self, path: str) -> bool:
         """Delete a page from the local repository."""

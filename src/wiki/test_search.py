@@ -10,10 +10,12 @@ from django.test import Client
 from wiki.services.git_storage import (
     GitStorageService,
     InvalidPathError,
+    get_metadata_field_type,
     validate_path,
 )
 from wiki.services.search import SearchResult, SearchService
 from wiki.services.sidebar import humanize_slug
+from wiki.views import parse_metadata_value
 
 
 @pytest.fixture
@@ -212,6 +214,139 @@ class TestGitStorageService:
             storage.get_page("../etc/passwd")
         with pytest.raises(InvalidPathError):
             storage.save_page("../evil", "content")
+
+    def test_save_page_with_metadata(self, storage):
+        """Metadata is preserved in save/load cycle."""
+        metadata = {
+            "title": "Test Page",
+            "last_edited_by": "testuser",
+            "revision_count": 5,
+        }
+        storage.save_page("test", "# Content", metadata=metadata)
+
+        page = storage.get_page("test")
+        assert page.metadata["title"] == "Test Page"
+        assert page.metadata["last_edited_by"] == "testuser"
+        assert page.metadata["revision_count"] == 5
+
+    def test_save_page_without_metadata(self, storage):
+        """Pages without metadata are saved as plain markdown."""
+        storage.save_page("test", "# Just Content")
+
+        page = storage.get_page("test")
+        assert page.content == "# Just Content"
+        assert page.metadata == {}
+
+    def test_editable_metadata_excludes_title(self, storage):
+        """editable_metadata property excludes title."""
+        metadata = {"title": "Test", "author": "user"}
+        storage.save_page("test", "# Content", metadata=metadata)
+
+        page = storage.get_page("test")
+        keys = [f["key"] for f in page.editable_metadata]
+        assert "title" not in keys
+        assert "author" in keys
+
+    def test_editable_metadata_type_detection(self, storage):
+        """editable_metadata detects appropriate field types."""
+        from datetime import datetime
+
+        metadata = {
+            "count": 42,
+            "name": "test",
+            "active": True,
+            "updated": datetime(2024, 1, 15, 10, 30),
+        }
+        storage.save_page("test", "# Content", metadata=metadata)
+
+        page = storage.get_page("test")
+        fields_by_key = {f["key"]: f for f in page.editable_metadata}
+
+        assert fields_by_key["count"]["type"] == "number"
+        assert fields_by_key["name"]["type"] == "text"
+        assert fields_by_key["active"]["type"] == "checkbox"
+        assert fields_by_key["updated"]["type"] == "datetime-local"
+
+
+class TestMetadataFieldType:
+    """Tests for get_metadata_field_type helper."""
+
+    def test_string_returns_text(self):
+        assert get_metadata_field_type("hello") == "text"
+
+    def test_int_returns_number(self):
+        assert get_metadata_field_type(42) == "number"
+
+    def test_float_returns_number(self):
+        assert get_metadata_field_type(3.14) == "number"
+
+    def test_bool_returns_checkbox(self):
+        assert get_metadata_field_type(True) == "checkbox"
+        assert get_metadata_field_type(False) == "checkbox"
+
+    def test_date_returns_date(self):
+        from datetime import date
+
+        assert get_metadata_field_type(date(2024, 1, 1)) == "date"
+
+    def test_datetime_returns_datetime_local(self):
+        from datetime import datetime
+
+        assert get_metadata_field_type(datetime(2024, 1, 1, 10, 30)) == "datetime-local"
+
+    def test_list_returns_text(self):
+        assert get_metadata_field_type(["a", "b"]) == "text"
+
+
+class TestParseMetadataValue:
+    """Tests for parse_metadata_value helper."""
+
+    def test_parses_bool_true(self):
+        assert parse_metadata_value("true", True) is True
+        assert parse_metadata_value("on", False) is True
+        assert parse_metadata_value("1", False) is True
+
+    def test_parses_bool_false(self):
+        assert parse_metadata_value("false", True) is False
+        assert parse_metadata_value("off", True) is False
+
+    def test_parses_int(self):
+        assert parse_metadata_value("42", 0) == 42
+        assert parse_metadata_value("-5", 0) == -5
+
+    def test_parses_float(self):
+        assert parse_metadata_value("3.14", 0.0) == 3.14
+
+    def test_parses_datetime(self):
+        from datetime import datetime
+
+        original = datetime(2024, 1, 1)
+        result = parse_metadata_value("2024-06-15T10:30", original)
+        assert result == datetime(2024, 6, 15, 10, 30)
+
+    def test_parses_date(self):
+        from datetime import date
+
+        original = date(2024, 1, 1)
+        result = parse_metadata_value("2024-06-15", original)
+        assert result == date(2024, 6, 15)
+
+    def test_parses_list(self):
+        result = parse_metadata_value("a, b, c", ["x"])
+        assert result == ["a", "b", "c"]
+
+    def test_parses_string(self):
+        assert parse_metadata_value("hello", "world") == "hello"
+
+    def test_invalid_int_returns_original(self):
+        assert parse_metadata_value("not a number", 42) == 42
+
+    def test_invalid_datetime_returns_original(self):
+        from datetime import datetime
+
+        original = datetime(2024, 1, 1)
+        result = parse_metadata_value("invalid", original)
+        assert result == original
 
 
 class TestHumanizeSlug:

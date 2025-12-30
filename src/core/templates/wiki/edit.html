@@ -67,21 +67,87 @@
 {% block body %}
 <form id="edit-form" method="POST" action="{% url 'edit' page_path=page.path %}">
     {% csrf_token %}
-    <div class="bg-white rounded-lg border border-gray-200 p-4">
-        <label for="content-editor" class="sr-only">Page content (Markdown)</label>
-        <textarea
-            id="content-editor"
-            name="content"
-            class="w-full"
-            aria-label="Page content (Markdown)"
-        >{{ page.content }}</textarea>
-    </div>
+    <div class="flex gap-6">
+        <!-- Main editor (left) -->
+        <div class="flex-1 min-w-0">
+            <div class="bg-white rounded-lg border border-gray-200 p-4">
+                <label for="content-editor" class="sr-only">Page content (Markdown)</label>
+                <textarea
+                    id="content-editor"
+                    name="content"
+                    class="w-full"
+                    aria-label="Page content (Markdown)"
+                >{{ page.content }}</textarea>
+            </div>
 
-    <p class="text-sm text-gray-500 mt-3">
-        <kbd class="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs">Ctrl</kbd> +
-        <kbd class="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs">Enter</kbd>
-        to save
-    </p>
+            <p class="text-sm text-gray-500 mt-3">
+                <kbd class="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs">Ctrl</kbd> +
+                <kbd class="px-2 py-1 bg-gray-100 border border-gray-300 rounded text-xs">Enter</kbd>
+                to save
+            </p>
+        </div>
+
+        <!-- Properties panel (right) -->
+        {% if page.editable_metadata %}
+        <aside class="w-72 flex-shrink-0">
+            <div class="bg-white rounded-lg border border-gray-200 p-4 sticky top-6">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">Properties</h3>
+                <div class="space-y-4">
+                    {% for field in page.editable_metadata %}
+                    <div>
+                        <label for="meta_{{ field.key }}" class="block text-xs font-medium text-gray-500 mb-1">
+                            {{ field.label }}
+                        </label>
+                        {% if field.type == "checkbox" %}
+                        <input
+                            type="checkbox"
+                            id="meta_{{ field.key }}"
+                            name="meta_{{ field.key }}"
+                            value="true"
+                            {% if field.value %}checked{% endif %}
+                            class="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        >
+                        {% elif field.type == "number" %}
+                        <input
+                            type="number"
+                            id="meta_{{ field.key }}"
+                            name="meta_{{ field.key }}"
+                            value="{{ field.value }}"
+                            step="any"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                        {% elif field.type == "date" %}
+                        <input
+                            type="date"
+                            id="meta_{{ field.key }}"
+                            name="meta_{{ field.key }}"
+                            value="{{ field.value }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                        {% elif field.type == "datetime-local" %}
+                        <input
+                            type="datetime-local"
+                            id="meta_{{ field.key }}"
+                            name="meta_{{ field.key }}"
+                            value="{{ field.value }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                        {% else %}
+                        <input
+                            type="text"
+                            id="meta_{{ field.key }}"
+                            name="meta_{{ field.key }}"
+                            value="{{ field.value }}"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        >
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </aside>
+        {% endif %}
+    </div>
 </form>
 {% endblock %}
 
