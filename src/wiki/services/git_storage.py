@@ -81,6 +81,22 @@ class WikiPage:
         return {k: v for k, v in self.metadata.items() if k not in ("title",)}
 
     @property
+    def content_date(self) -> datetime | None:
+        """Return the content date from frontmatter, falling back to file mtime."""
+        # Normalize metadata keys for case-insensitive lookup
+        normalized = {k.lower().replace("_", ""): v for k, v in self.metadata.items()}
+        # Check common date field names (normalized: lastupdated, updated, date, modified)
+        date_fields = ("lastupdated", "updated", "date", "modified", "lastmodified")
+        for field_name in date_fields:
+            if field_name in normalized:
+                value = normalized[field_name]
+                if isinstance(value, datetime):
+                    return value
+                if isinstance(value, date):
+                    return datetime.combine(value, datetime.min.time())
+        return self.last_modified
+
+    @property
     def editable_metadata(self) -> list[dict]:
         """Return metadata fields with type info for form rendering."""
         if not self.metadata:

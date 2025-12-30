@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load staleness %}
 
 {% block title %}{{ page.title }}{% endblock %}
 
@@ -40,9 +41,29 @@
     </div>
 
     <!-- Right panel for metadata -->
-    {% if page.display_metadata %}
+    {% if page.display_metadata or page.content_date %}
     <aside class="w-64 flex-shrink-0">
         <div class="bg-white rounded-lg border border-gray-200 p-4 sticky top-6">
+            {% if page.content_date %}
+            <div class="{% if page.content_date|is_outdated %}bg-red-50 border border-red-200{% else %}bg-gray-50{% endif %} rounded-lg p-3 mb-4">
+                <div class="flex items-center gap-2">
+                    {% if page.content_date|is_outdated %}
+                    <svg class="w-4 h-4 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    {% else %}
+                    <span class="w-2 h-2 rounded-full bg-{{ page.content_date|staleness_color }} flex-shrink-0"></span>
+                    {% endif %}
+                    <span class="text-sm {% if page.content_date|is_outdated %}text-red-700 font-medium{% else %}text-gray-600{% endif %}">
+                        {% if page.content_date|is_outdated %}Content may be outdated{% else %}{{ page.content_date|staleness_label }}{% endif %}
+                    </span>
+                </div>
+                {% if page.content_date|is_outdated %}
+                <p class="text-xs text-red-600 mt-1 ml-6">{{ page.content_date|staleness_label }}</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% if page.display_metadata %}
             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Properties</h3>
             <dl class="space-y-3">
                 {% for key, value in page.display_metadata.items %}
@@ -58,6 +79,7 @@
                 </div>
                 {% endfor %}
             </dl>
+            {% endif %}
         </div>
     </aside>
     {% endif %}
