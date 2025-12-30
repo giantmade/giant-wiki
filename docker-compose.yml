@@ -4,19 +4,22 @@ services:
     build:
       context: .
       dockerfile: dev.Dockerfile
-    command: uv run python manage.py runserver 0.0.0.0:8000
+    command: /app/scripts/dev-start.sh
     working_dir: /app/src
     volumes:
       - ./src:/app/src:z
       - ./var:/app/var:z
+      - ./scripts:/app/scripts:z
     ports:
-      - "8000:8000"
+      - "9050:8000"
     environment:
       - SECRET_KEY=${SECRET_KEY:-development-secret-key-change-me}
       - DEBUG=True
       - DATABASE_URL=sqlite:////app/var/data/wiki.db
       - WIKI_REPO_PATH=/app/var/repo
       - WIKI_REPO_URL=${WIKI_REPO_URL:-}
+      - WIKI_REPO_BRANCH=${WIKI_REPO_BRANCH:-}
+      - GIT_SSH_KEY=${GIT_SSH_KEY:-}
       - CELERY_BROKER_URL=redis://cache:6379/1
       - CELERY_RESULT_BACKEND=redis://cache:6379/1
       - SITE_TITLE=${SITE_TITLE:-Giant Wiki}
@@ -29,17 +32,20 @@ services:
     build:
       context: .
       dockerfile: dev.Dockerfile
-    command: uv run celery -A core worker -l INFO --concurrency=2
+    command: /app/scripts/dev-worker.sh
     working_dir: /app/src
     volumes:
       - ./src:/app/src:z
       - ./var:/app/var:z
+      - ./scripts:/app/scripts:z
     environment:
       - SECRET_KEY=${SECRET_KEY:-development-secret-key-change-me}
       - DEBUG=True
       - DATABASE_URL=sqlite:////app/var/data/wiki.db
       - WIKI_REPO_PATH=/app/var/repo
       - WIKI_REPO_URL=${WIKI_REPO_URL:-}
+      - WIKI_REPO_BRANCH=${WIKI_REPO_BRANCH:-}
+      - GIT_SSH_KEY=${GIT_SSH_KEY:-}
       - CELERY_BROKER_URL=redis://cache:6379/1
       - CELERY_RESULT_BACKEND=redis://cache:6379/1
     depends_on:
@@ -49,7 +55,7 @@ services:
   cache:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "9052:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 3s

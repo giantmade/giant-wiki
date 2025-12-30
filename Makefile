@@ -1,5 +1,5 @@
 .PHONY: install server build up down restart logs logs-web logs-worker ps
-.PHONY: test test-fast cov format shell clean
+.PHONY: test test-fast cov format shell clean clone-content
 
 # Helper to auto-start Docker if needed
 define ensure_docker_running
@@ -96,6 +96,29 @@ collectstatic:
 # =============================================================================
 # WIKI OPERATIONS
 # =============================================================================
+
+clone-content:
+	@if [ -d var/repo ]; then \
+		echo "Removing existing var/repo (may need Docker for permissions)..."; \
+		rm -rf var/repo 2>/dev/null || docker run --rm -v "$(PWD)/var:/var" alpine rm -rf /var/repo; \
+	fi
+	@if [ -z "$(WIKI_REPO_URL)" ]; then \
+		if [ -f .env ]; then \
+			WIKI_REPO_URL=$$(grep -E '^WIKI_REPO_URL=' .env | cut -d'=' -f2-); \
+		fi; \
+		if [ -z "$$WIKI_REPO_URL" ]; then \
+			echo "Error: WIKI_REPO_URL not set. Either:"; \
+			echo "  1. Set WIKI_REPO_URL in .env"; \
+			echo "  2. Run: make clone-content WIKI_REPO_URL=git@github.com:org/repo.git"; \
+			exit 1; \
+		fi; \
+		echo "Cloning wiki content from $$WIKI_REPO_URL..."; \
+		git clone "$$WIKI_REPO_URL" var/repo; \
+	else \
+		echo "Cloning wiki content from $(WIKI_REPO_URL)..."; \
+		git clone "$(WIKI_REPO_URL)" var/repo; \
+	fi
+	@echo "Done. Run 'make restart' to reload."
 
 rebuild-search:
 	@echo "Rebuilding search index..."

@@ -15,9 +15,9 @@ Internal documentation wiki with Git-based storage.
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| web | 8000 | Django runserver |
+| web | 9050 | Django runserver |
 | worker | - | Celery worker |
-| cache | 6379 | Redis (Celery broker) |
+| cache | 9052 | Redis (Celery broker) |
 
 ## Development Commands
 
