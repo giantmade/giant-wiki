@@ -39,12 +39,18 @@ def invalidate_sidebar_cache() -> None:
     cache.delete(SIDEBAR_CACHE_KEY)
 
 
-def _get_page_list() -> list[str]:
-    """Get list of pages, with caching."""
+def _get_page_titles() -> dict[str, str]:
+    """Get mapping of page paths to titles, with caching."""
     pages = cache.get(SIDEBAR_CACHE_KEY)
     if pages is None:
         storage = get_storage_service()
-        pages = storage.list_pages()
+        pages = {}
+        for path in storage.list_pages():
+            page = storage.get_page(path)
+            if page:
+                pages[path] = page.title
+            else:
+                pages[path] = humanize_slug(path.split("/")[-1])
         cache.set(SIDEBAR_CACHE_KEY, pages, SIDEBAR_CACHE_TTL)
     return pages
 
@@ -57,11 +63,11 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
     - Root-level pages go in "General" section
     - Expands category containing current page
     """
-    pages = _get_page_list()
+    page_titles = _get_page_titles()
 
     # Exclude special pages
     excluded = {"Sidebar"}
-    pages = [p for p in pages if p not in excluded]
+    pages = [p for p in page_titles.keys() if p not in excluded]
 
     # Group by category
     categories: dict[str, list[tuple[str, str]]] = {}
@@ -75,8 +81,8 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
         if category_slug not in categories:
             categories[category_slug] = []
 
-        # Title is the last segment, humanized
-        title = humanize_slug(page_path.split("/")[-1])
+        # Title from frontmatter or fallback to humanized path
+        title = page_titles[page_path]
         categories[category_slug].append((page_path, title))
 
     # Determine which category to expand
