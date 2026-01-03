@@ -2,7 +2,7 @@
 
 from django.core.management.base import BaseCommand
 
-from wiki.tasks import _rebuild_search_index_sync
+from wiki.tasks import rebuild_search_index_sync
 
 
 class Command(BaseCommand):
@@ -10,5 +10,5 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write("Rebuilding search index...")
-        count = _rebuild_search_index_sync()
+        count = rebuild_search_index_sync()
         self.stdout.write(self.style.SUCCESS(f"Successfully indexed {count} pages"))

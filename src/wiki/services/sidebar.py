@@ -44,13 +44,8 @@ def _get_page_titles() -> dict[str, str]:
     pages = cache.get(SIDEBAR_CACHE_KEY)
     if pages is None:
         storage = get_storage_service()
-        pages = {}
-        for path in storage.list_pages():
-            page = storage.get_page(path)
-            if page:
-                pages[path] = page.title
-            else:
-                pages[path] = humanize_slug(path.split("/")[-1])
+        # Use batch operation instead of N+1 individual get_page() calls
+        pages = storage.get_page_titles()
         cache.set(SIDEBAR_CACHE_KEY, pages, SIDEBAR_CACHE_TTL)
     return pages
 

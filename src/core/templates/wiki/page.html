@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load staleness %}
+{% load wiki_filters %}
 
 {% block title %}{{ page.title }}{% endblock %}
 
@@ -70,8 +71,9 @@
                 <div>
                     <dt class="text-xs font-medium text-gray-500">{{ key|title }}</dt>
                     <dd class="mt-1 text-sm text-gray-900">
-                        {% if value|slice:":4" == "http" %}
-                            <a href="{{ value }}" class="text-green-600 hover:underline" target="_blank">{{ value }}</a>
+                        {% if value|is_url %}
+                            <a href="{{ value }}" class="text-green-600 hover:underline"
+                               target="_blank" rel="noopener noreferrer">{{ value }}</a>
                         {% else %}
                             {{ value }}
                         {% endif %}

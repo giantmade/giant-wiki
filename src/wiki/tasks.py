@@ -9,7 +9,15 @@ from .services.sidebar import invalidate_sidebar_cache
 
 @shared_task
 def sync_to_remote(message: str = "Update wiki content"):
-    """Commit and push changes to remote repository."""
+    """Commit and push changes to remote repository.
+
+    Returns:
+        True if changes were pushed, False if nothing to commit
+
+    Raises:
+        GitOperationError: If git operations fail
+        ValueError: If message is invalid
+    """
     service = get_storage_service()
     return service.commit_and_push(message)
 
@@ -27,8 +35,12 @@ def sync_from_remote():
     return success
 
 
-def _rebuild_search_index_sync() -> int:
-    """Synchronously rebuild the search index. Returns page count."""
+def rebuild_search_index_sync() -> int:
+    """Rebuild search index synchronously (for management commands).
+
+    Returns:
+        Number of pages indexed
+    """
     storage = get_storage_service()
     search_service = get_search_service()
 
@@ -44,5 +56,5 @@ def _rebuild_search_index_sync() -> int:
 
 @shared_task
 def rebuild_search_index():
-    """Rebuild the SQLite FTS search index (Celery task wrapper)."""
-    return _rebuild_search_index_sync()
+    """Rebuild search index (async Celery task)."""
+    return rebuild_search_index_sync()

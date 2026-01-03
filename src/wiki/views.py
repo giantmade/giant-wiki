@@ -95,6 +95,7 @@ def edit(request, page_path: str):
 
     # Store original metadata for POST processing
     original_metadata = wiki_page.metadata if wiki_page else {}
+    is_new_page = wiki_page is None
 
     if not wiki_page:
         wiki_page = WikiPage(path=page_path, content="")
@@ -124,8 +125,15 @@ def edit(request, page_path: str):
             search_service = get_search_service()
             search_service.add_page(page_path, content)
 
-            # Invalidate sidebar cache (new page may have been added)
-            invalidate_sidebar_cache()
+            # Only invalidate sidebar cache if new page or title changed
+            should_invalidate_cache = is_new_page
+            if not should_invalidate_cache and metadata:
+                # Check if title changed
+                if "title" in metadata and metadata["title"] != original_metadata.get("title"):
+                    should_invalidate_cache = True
+
+            if should_invalidate_cache:
+                invalidate_sidebar_cache()
 
             # Queue background sync to Git remote
             sync_to_remote.delay(f"Update: {page_path}")

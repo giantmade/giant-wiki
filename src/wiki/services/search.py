@@ -48,7 +48,8 @@ class SearchService:
         Returns:
             Number of pages indexed
         """
-        with sqlite3.connect(self.db_path) as conn:
+        conn = sqlite3.connect(self.db_path)
+        try:
             # Clear existing index
             conn.execute("DELETE FROM wiki_fts")
 
@@ -58,12 +59,14 @@ class SearchService:
                 [(p["path"], p["content"]) for p in pages],
             )
             conn.commit()
-
-        return len(pages)
+            return len(pages)
+        finally:
+            conn.close()
 
     def add_page(self, path: str, content: str):
         """Add or update a single page in the index."""
-        with sqlite3.connect(self.db_path) as conn:
+        conn = sqlite3.connect(self.db_path)
+        try:
             # Remove existing entry
             conn.execute("DELETE FROM wiki_fts WHERE path = ?", (path,))
             # Add new entry
@@ -72,12 +75,17 @@ class SearchService:
                 (path, content),
             )
             conn.commit()
+        finally:
+            conn.close()
 
     def remove_page(self, path: str):
         """Remove a page from the index."""
-        with sqlite3.connect(self.db_path) as conn:
+        conn = sqlite3.connect(self.db_path)
+        try:
             conn.execute("DELETE FROM wiki_fts WHERE path = ?", (path,))
             conn.commit()
+        finally:
+            conn.close()
 
     def search(self, query: str, limit: int = 50) -> list[SearchResult]:
         """Search for pages matching the query.
@@ -92,7 +100,8 @@ class SearchService:
         if not query.strip():
             return []
 
-        with sqlite3.connect(self.db_path) as conn:
+        conn = sqlite3.connect(self.db_path)
+        try:
             # Escape special FTS5 characters
             safe_query = query.replace('"', '""')
 
@@ -128,6 +137,8 @@ class SearchService:
                 )
 
                 return [SearchResult(path=row[0], snippet=row[1] + "...", score=row[2]) for row in cursor.fetchall()]
+        finally:
+            conn.close()
 
 
 # Singleton instance
@@ -140,3 +151,9 @@ def get_search_service() -> SearchService:
     if _search_service is None:
         _search_service = SearchService()
     return _search_service
+
+
+def reset_search_service() -> None:
+    """Reset the search service singleton (for testing)."""
+    global _search_service
+    _search_service = None

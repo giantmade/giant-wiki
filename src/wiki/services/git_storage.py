@@ -18,6 +18,12 @@ class InvalidPathError(ValueError):
     pass
 
 
+class GitOperationError(Exception):
+    """Raised when a git operation fails."""
+
+    pass
+
+
 def validate_path(path: str) -> str:
     """Validate and normalize a page path.
 
@@ -42,6 +48,30 @@ def validate_path(path: str) -> str:
         raise InvalidPathError("Path cannot contain null bytes")
 
     return path
+
+
+def validate_commit_message(message: str) -> str:
+    """Validate a git commit message.
+
+    Args:
+        message: The commit message to validate
+
+    Returns:
+        The validated and normalized message
+
+    Raises:
+        ValueError: If message is invalid
+    """
+    if not message:
+        raise ValueError("Commit message cannot be empty")
+
+    if len(message) > 1000:
+        raise ValueError("Commit message too long (max 1000 characters)")
+
+    if "\x00" in message:
+        raise ValueError("Commit message contains invalid characters")
+
+    return message.strip()
 
 
 def get_metadata_field_type(value) -> str:
@@ -223,8 +253,16 @@ class GitStorageService:
             return True
         return False
 
-    def list_pages(self) -> list[str]:
-        """List all page paths in the repository."""
+    def list_pages(self, limit: int | None = None, offset: int = 0) -> list[str]:
+        """List all page paths in the repository.
+
+        Args:
+            limit: Maximum number of pages to return (None for all)
+            offset: Number of pages to skip
+
+        Returns:
+            List of page paths, sorted alphabetically
+        """
         if not self.pages_path.exists():
             return []
 
@@ -233,7 +271,54 @@ class GitStorageService:
             relative = file_path.relative_to(self.pages_path)
             path = str(relative.with_suffix(""))
             pages.append(path)
-        return sorted(pages)
+
+        pages = sorted(pages)
+
+        if offset > 0:
+            pages = pages[offset:]
+        if limit is not None:
+            pages = pages[:limit]
+
+        return pages
+
+    def get_page_titles(self) -> dict[str, str]:
+        """Get all page titles efficiently (batch operation).
+
+        Returns:
+            Dictionary mapping page paths to titles
+
+        Performance: Reads only frontmatter instead of full page content,
+        which is significantly faster than calling get_page() for each page.
+        """
+        from wiki.services.sidebar import humanize_slug
+
+        titles = {}
+        if not self.pages_path.exists():
+            return titles
+
+        for file_path in self.pages_path.rglob("*.md"):
+            relative = file_path.relative_to(self.pages_path)
+            path = str(relative.with_suffix(""))
+
+            try:
+                # Read only first part of file to check for frontmatter
+                raw_content = file_path.read_text(encoding="utf-8")
+
+                # Quick check if file has frontmatter
+                if raw_content.startswith("---"):
+                    # Parse frontmatter
+                    post = frontmatter.loads(raw_content)
+                    if "title" in post.metadata:
+                        titles[path] = post.metadata["title"]
+                        continue
+
+                # Fallback to humanized path
+                titles[path] = humanize_slug(path.split("/")[-1])
+            except Exception:
+                # On any error, use humanized path as fallback
+                titles[path] = humanize_slug(path.split("/")[-1])
+
+        return titles
 
     def get_attachment_path(self, page_path: str, filename: str) -> Path:
         """Get the filesystem path for an attachment."""
@@ -259,7 +344,20 @@ class GitStorageService:
         return [f.name for f in attachments_dir.iterdir() if f.is_file()]
 
     def commit_and_push(self, message: str) -> bool:
-        """Commit all changes and push to remote."""
+        """Commit all changes and push to remote.
+
+        Args:
+            message: The commit message
+
+        Returns:
+            True if changes were committed/pushed, False if nothing to commit
+
+        Raises:
+            GitOperationError: If git commands fail
+            ValueError: If message is invalid
+        """
+        message = validate_commit_message(message)
+
         try:
             # Stage all changes
             subprocess.run(
@@ -277,7 +375,7 @@ class GitStorageService:
                 text=True,
             )
             if not result.stdout.strip():
-                return True  # Nothing to commit
+                return False  # Nothing to commit
 
             # Commit
             subprocess.run(
@@ -307,16 +405,19 @@ class GitStorageService:
 
             return True
         except subprocess.CalledProcessError as e:
-            logger.error(
-                "Git commit_and_push failed: %s (stdout: %s, stderr: %s)",
-                e,
-                e.stdout,
-                e.stderr,
-            )
-            return False
+            error_msg = f"Git operation failed: {e.stderr.decode() if e.stderr else str(e)}"
+            logger.error("commit_and_push failed: %s", error_msg)
+            raise GitOperationError(error_msg) from e
 
     def pull(self) -> bool:
-        """Pull latest changes from remote."""
+        """Pull latest changes from remote.
+
+        Returns:
+            True if changes were pulled, False if no remote configured
+
+        Raises:
+            GitOperationError: If git pull fails
+        """
         try:
             result = subprocess.run(
                 ["git", "remote"],
@@ -325,7 +426,7 @@ class GitStorageService:
                 text=True,
             )
             if not result.stdout.strip():
-                return True  # No remote, nothing to pull
+                return False  # No remote configured
 
             pull_cmd = ["git", "pull", "--rebase"]
             if self.branch:
@@ -338,16 +439,22 @@ class GitStorageService:
             )
             return True
         except subprocess.CalledProcessError as e:
-            logger.error(
-                "Git pull failed: %s (stdout: %s, stderr: %s)",
-                e,
-                e.stdout,
-                e.stderr,
-            )
-            return False
+            error_msg = f"Git pull failed: {e.stderr.decode() if e.stderr else str(e)}"
+            logger.error("pull failed: %s", error_msg)
+            raise GitOperationError(error_msg) from e
 
     def get_recent_changes(self, limit: int = 50) -> list[dict]:
-        """Get recent changes from git log."""
+        """Get recent changes from git log.
+
+        Args:
+            limit: Maximum number of commits to return (1-1000, default 50)
+
+        Returns:
+            List of change dictionaries with sha, date, message, and files
+        """
+        # Clamp limit to reasonable range
+        limit = max(1, min(limit, 1000))
+
         try:
             result = subprocess.run(
                 [
@@ -400,3 +507,9 @@ def get_storage_service() -> GitStorageService:
         _storage_service = GitStorageService()
         _storage_service.ensure_repo_exists()
     return _storage_service
+
+
+def reset_storage_service() -> None:
+    """Reset the storage service singleton (for testing)."""
+    global _storage_service
+    _storage_service = None
