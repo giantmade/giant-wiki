@@ -1,11 +1,15 @@
 """Sidebar generation service."""
 
+import logging
+import time
 from dataclasses import dataclass
 from typing import NamedTuple
 
 from django.core.cache import cache
 
 from .git_storage import get_storage_service
+
+logger = logging.getLogger(__name__)
 
 SIDEBAR_CACHE_KEY = "wiki_sidebar_pages"
 SIDEBAR_CACHE_TTL = 1800  # 30 minutes
@@ -41,12 +45,22 @@ def invalidate_sidebar_cache() -> None:
 
 def _get_page_titles() -> dict[str, str]:
     """Get mapping of page paths to titles, with caching."""
+    start_time = time.time()
     pages = cache.get(SIDEBAR_CACHE_KEY)
+
     if pages is None:
+        logger.warning("Sidebar cache MISS - loading from storage")
         storage = get_storage_service()
         # Use batch operation instead of N+1 individual get_page() calls
+        storage_start = time.time()
         pages = storage.get_page_titles()
+        storage_time = time.time() - storage_start
+        logger.info(f"Loaded {len(pages)} page titles from storage in {storage_time:.3f}s")
         cache.set(SIDEBAR_CACHE_KEY, pages, SIDEBAR_CACHE_TTL)
+    else:
+        cache_time = time.time() - start_time
+        logger.info(f"Sidebar cache HIT - {len(pages)} pages in {cache_time:.3f}s")
+
     return pages
 
 

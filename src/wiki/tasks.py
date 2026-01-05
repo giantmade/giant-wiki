@@ -150,12 +150,24 @@ def rebuild_search_index(self, task_id):
 @shared_task(name="wiki.warm_sidebar_cache")
 def warm_sidebar_cache():
     """Warm the sidebar cache on startup."""
+    import logging
+    import time
+
     from django.core.cache import cache
 
     from .services.git_storage import get_storage_service
     from .services.sidebar import SIDEBAR_CACHE_KEY, SIDEBAR_CACHE_TTL
 
+    logger = logging.getLogger(__name__)
+
+    start_time = time.time()
+    logger.info("Starting sidebar cache warming...")
+
     storage = get_storage_service()
     pages = storage.get_page_titles()
     cache.set(SIDEBAR_CACHE_KEY, pages, SIDEBAR_CACHE_TTL)
+
+    elapsed = time.time() - start_time
+    logger.info(f"Sidebar cache warmed: {len(pages)} pages in {elapsed:.3f}s")
+
     return len(pages)
