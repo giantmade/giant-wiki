@@ -64,10 +64,16 @@ def parse_metadata_value(form_value: str, original_value):
 
 def page(request, page_path: str = "index"):
     """Display a wiki page."""
+    import time
+
+    start_time = time.time()
     storage = get_storage_service()
 
     try:
+        get_page_start = time.time()
         wiki_page = storage.get_page(page_path)
+        get_page_time = time.time() - get_page_start
+        logger.info(f"storage.get_page({page_path}) took {get_page_time:.3f}s")
     except InvalidPathError:
         return HttpResponseNotFound("Invalid page path")
 
@@ -75,14 +81,25 @@ def page(request, page_path: str = "index"):
     if not wiki_page:
         return redirect(reverse("edit", kwargs={"page_path": page_path}))
 
-    return render(
+    markdown_start = time.time()
+    page_html = render_markdown(wiki_page.content)
+    markdown_time = time.time() - markdown_start
+    logger.info(f"render_markdown took {markdown_time:.3f}s")
+
+    render_start = time.time()
+    response = render(
         request,
         "wiki/page.html",
         {
             "page": wiki_page,
-            "page_html": render_markdown(wiki_page.content),
+            "page_html": page_html,
         },
     )
+    render_time = time.time() - render_start
+    total_time = time.time() - start_time
+    logger.info(f"template render took {render_time:.3f}s, total view time {total_time:.3f}s")
+
+    return response
 
 
 def edit(request, page_path: str):

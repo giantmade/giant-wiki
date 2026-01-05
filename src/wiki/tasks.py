@@ -156,18 +156,28 @@ def warm_sidebar_cache():
     from django.core.cache import cache
 
     from .services.git_storage import get_storage_service
-    from .services.sidebar import SIDEBAR_CACHE_KEY, SIDEBAR_CACHE_TTL
+    from .services.sidebar import (
+        SIDEBAR_CACHE_KEY,
+        SIDEBAR_CACHE_TTL,
+        SIDEBAR_STRUCTURE_CACHE_KEY,
+        _build_sidebar_structure,
+    )
 
     logger = logging.getLogger(__name__)
 
     start_time = time.time()
     logger.info("Starting sidebar cache warming...")
 
+    # Warm page titles cache
     storage = get_storage_service()
     pages = storage.get_page_titles()
     cache.set(SIDEBAR_CACHE_KEY, pages, SIDEBAR_CACHE_TTL)
 
+    # Warm structure cache
+    structure = _build_sidebar_structure(pages)
+    cache.set(SIDEBAR_STRUCTURE_CACHE_KEY, structure, SIDEBAR_CACHE_TTL)
+
     elapsed = time.time() - start_time
-    logger.info(f"Sidebar cache warmed: {len(pages)} pages in {elapsed:.3f}s")
+    logger.info(f"Sidebar cache warmed: {len(pages)} pages, {len(structure)} categories in {elapsed:.3f}s")
 
     return len(pages)

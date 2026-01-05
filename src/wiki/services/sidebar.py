@@ -12,6 +12,7 @@ from .git_storage import get_storage_service
 logger = logging.getLogger(__name__)
 
 SIDEBAR_CACHE_KEY = "wiki_sidebar_pages"
+SIDEBAR_STRUCTURE_CACHE_KEY = "wiki_sidebar_structure"
 SIDEBAR_CACHE_TTL = 1800  # 30 minutes
 
 
@@ -41,6 +42,7 @@ def humanize_slug(slug: str) -> str:
 def invalidate_sidebar_cache() -> None:
     """Invalidate the sidebar cache (call after page edits)."""
     cache.delete(SIDEBAR_CACHE_KEY)
+    cache.delete(SIDEBAR_STRUCTURE_CACHE_KEY)
 
 
 def _get_page_titles() -> dict[str, str]:
@@ -64,16 +66,13 @@ def _get_page_titles() -> dict[str, str]:
     return pages
 
 
-def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCategory]:
+def _build_sidebar_structure(page_titles: dict[str, str]) -> list[SidebarCategory]:
     """
-    Build sidebar categories from page listing.
+    Build sidebar category structure from page titles.
 
-    - Groups pages by top-level directory
-    - Root-level pages go in "General" section
-    - Expands category containing current page
+    This is the expensive operation that should be cached.
+    All items have is_current=False and is_expanded=False.
     """
-    page_titles = _get_page_titles()
-
     # Exclude special pages
     excluded = {"Sidebar"}
     pages = [p for p in page_titles.keys() if p not in excluded]
@@ -90,16 +89,8 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
         if category_slug not in categories:
             categories[category_slug] = []
 
-        # Title from frontmatter or fallback to humanized path
         title = page_titles[page_path]
         categories[category_slug].append((page_path, title))
-
-    # Determine which category to expand
-    current_category = None
-    if current_path and "/" in current_path:
-        current_category = current_path.split("/")[0]
-    elif current_path:
-        current_category = "_general"
 
     # Build category objects
     result = []
@@ -107,7 +98,7 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
     # "General" first if exists
     if "_general" in categories:
         items = [
-            SidebarItem(path=p, title=t, is_current=p == current_path)
+            SidebarItem(path=p, title=t, is_current=False)
             for p, t in sorted(categories["_general"], key=lambda x: x[1])
         ]
         result.append(
@@ -115,7 +106,7 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
                 name="General",
                 slug="_general",
                 items=items,
-                is_expanded=current_category == "_general",
+                is_expanded=False,
             )
         )
 
@@ -123,15 +114,74 @@ def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCateg
     for slug in sorted(k for k in categories if k != "_general"):
         name = humanize_slug(slug)
         items = [
-            SidebarItem(path=p, title=t, is_current=p == current_path)
-            for p, t in sorted(categories[slug], key=lambda x: x[1])
+            SidebarItem(path=p, title=t, is_current=False) for p, t in sorted(categories[slug], key=lambda x: x[1])
         ]
         result.append(
             SidebarCategory(
                 name=name,
                 slug=slug,
                 items=items,
-                is_expanded=current_category == slug,
+                is_expanded=False,
+            )
+        )
+
+    return result
+
+
+def get_sidebar_categories(current_path: str | None = None) -> list[SidebarCategory]:
+    """
+    Get sidebar categories with current page marked.
+
+    Structure is cached; only the current page marking is dynamic.
+    """
+    # Try to get cached structure
+    categories = cache.get(SIDEBAR_STRUCTURE_CACHE_KEY)
+
+    if categories is None:
+        logger.warning("Sidebar structure cache MISS - building from page titles")
+        start_time = time.time()
+
+        # Get page titles (already cached separately)
+        page_titles = _get_page_titles()
+
+        # Build and cache the structure
+        categories = _build_sidebar_structure(page_titles)
+        cache.set(SIDEBAR_STRUCTURE_CACHE_KEY, categories, SIDEBAR_CACHE_TTL)
+
+        build_time = time.time() - start_time
+        logger.info(f"Built sidebar structure in {build_time:.3f}s")
+    else:
+        logger.info("Sidebar structure cache HIT")
+
+    # Fast path: if no current path, return cached structure as-is
+    if not current_path:
+        return categories
+
+    # Determine which category to expand based on current path
+    current_category = None
+    if "/" in current_path:
+        current_category = current_path.split("/")[0]
+    else:
+        current_category = "_general"
+
+    # Clone structure and mark current page (fast: O(n) where n = total pages)
+    result = []
+    for category in categories:
+        # Check if this category should be expanded
+        is_expanded = category.slug == current_category
+
+        # Mark current item in this category
+        items = [
+            SidebarItem(path=item.path, title=item.title, is_current=(item.path == current_path))
+            for item in category.items
+        ]
+
+        result.append(
+            SidebarCategory(
+                name=category.name,
+                slug=category.slug,
+                items=items,
+                is_expanded=is_expanded,
             )
         )
 

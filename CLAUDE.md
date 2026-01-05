@@ -106,14 +106,16 @@ attachments/
 
 ### Sidebar Cache Warming
 
-The sidebar page listing is cached in Redis for fast access:
+The sidebar uses a two-tier caching strategy in Redis for fast access:
 
-- **Startup:** Cache automatically warmed via `warm_sidebar_cache` Celery task
+- **Page titles cache:** Maps page paths to frontmatter titles (raw data)
+- **Structure cache:** Pre-built category hierarchy with sorted items (99% of work done)
+- **Startup:** Both caches warmed via `warm_sidebar_cache` Celery task
 - **TTL:** 30 minutes (configurable via `SIDEBAR_CACHE_TTL`)
-- **Git sync:** Cache re-warmed automatically after pulling changes
-- **Fallback:** File scanning if cache miss (rare)
+- **Git sync:** Caches re-warmed automatically after pulling changes
+- **Performance:** ~5-10ms per request (structure cache hit) vs ~7000ms (cold)
 
-Implementation in `src/core/apps.py` (CoreConfig.ready()) and `src/wiki/tasks.py`.
+Implementation: `src/wiki/services/sidebar.py` (two cache keys) and `src/wiki/tasks.py` (cache warming).
 
 ## Deployment
 

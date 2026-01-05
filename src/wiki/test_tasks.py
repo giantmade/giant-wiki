@@ -310,7 +310,7 @@ class TestWarmSidebarCache(TestCase):
     @patch("django.core.cache.cache.set")
     @patch("wiki.services.git_storage.get_storage_service")
     def test_warm_sidebar_cache_populates_redis(self, mock_get_storage, mock_cache_set):
-        """Test that cache warming populates Redis with page titles."""
+        """Test that cache warming populates Redis with page titles and structure."""
         mock_service = MagicMock()
         mock_service.get_page_titles.return_value = {
             "page1": "Page 1",
@@ -323,12 +323,15 @@ class TestWarmSidebarCache(TestCase):
 
         assert count == 3
         mock_service.get_page_titles.assert_called_once()
-        mock_cache_set.assert_called_once()
-        # Verify the cache was set with correct key, value, and TTL
-        call_args = mock_cache_set.call_args
-        assert call_args[0][0] == "wiki_sidebar_pages"
-        assert call_args[0][1] == {"page1": "Page 1", "page2": "Page 2", "page3": "Page 3"}
-        assert call_args[0][2] == 1800  # 30 minutes
+        # Should call cache.set twice: once for titles, once for structure
+        assert mock_cache_set.call_count == 2
+        # Verify both caches were set with correct TTL
+        calls = mock_cache_set.call_args_list
+        assert calls[0][0][0] == "wiki_sidebar_pages"
+        assert calls[0][0][1] == {"page1": "Page 1", "page2": "Page 2", "page3": "Page 3"}
+        assert calls[0][0][2] == 1800  # 30 minutes
+        assert calls[1][0][0] == "wiki_sidebar_structure"
+        assert calls[1][0][2] == 1800  # 30 minutes
 
     @patch("django.core.cache.cache.set")
     @patch("wiki.services.git_storage.get_storage_service")
@@ -341,7 +344,8 @@ class TestWarmSidebarCache(TestCase):
         count = warm_sidebar_cache()
 
         assert count == 0
-        mock_cache_set.assert_called_once()
+        # Should call cache.set twice: once for titles, once for structure
+        assert mock_cache_set.call_count == 2
 
     @patch("django.core.cache.cache.set")
     @patch("wiki.services.git_storage.get_storage_service")
