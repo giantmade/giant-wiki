@@ -543,7 +543,7 @@ class TestGitOperations:
         temp_repo.commit_and_push("Initial commit")
 
         # Limit too high - should clamp to 1000
-        changes = temp_repo.get_recent_changes(limit=5000)
+        _changes = temp_repo.get_recent_changes(limit=5000)
         # Should work without error
 
         # Limit too low - should clamp to 1
