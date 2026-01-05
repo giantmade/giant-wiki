@@ -475,7 +475,7 @@ class TestRenderMarkdown:
         assert "<h1 id=" in html and "Section 1</h1>" in html
 
 
-class TestParseMetadataValue:
+class TestParseMetadataValueEdgeCases:
     """Tests for parse_metadata_value edge cases."""
 
     def test_parses_bool_various_inputs(self):
