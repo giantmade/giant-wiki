@@ -610,9 +610,9 @@ class TestViews:
         )
         mock_storage.return_value.get_page.return_value = existing_page
 
-        with patch("wiki.views.get_search_service") as mock_search:
+        with patch("wiki.views.get_search_service") as _mock_search:
             with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
-                with patch("wiki.views.dispatch_task") as mock_sync:
+                with patch("wiki.views.dispatch_task") as _mock_sync:
                     response = client.post(
                         "/wiki/testpage/edit/",
                         {
@@ -634,9 +634,9 @@ class TestViews:
         )
         mock_storage.return_value.get_page.return_value = existing_page
 
-        with patch("wiki.views.get_search_service") as mock_search:
+        with patch("wiki.views.get_search_service") as _mock_search:
             with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
-                with patch("wiki.views.dispatch_task") as mock_sync:
+                with patch("wiki.views.dispatch_task") as _mock_sync:
                     response = client.post(
                         "/wiki/testpage/edit/",
                         {"content": "Content", "meta_title": "New Title"},
@@ -657,7 +657,7 @@ class TestViews:
         with patch("wiki.views.get_search_service"):
             with patch("wiki.views.invalidate_sidebar_cache"):
                 with patch("wiki.views.dispatch_task"):
-                    response = client.post(
+                    _response = client.post(
                         "/wiki/testpage/edit/",
                         {
                             "content": "Content"
@@ -686,7 +686,7 @@ class TestViews:
         with patch("wiki.views.get_search_service"):
             with patch("wiki.views.invalidate_sidebar_cache"):
                 with patch("wiki.views.dispatch_task"):
-                    response = client.post(
+                    _response = client.post(
                         "/wiki/testpage/edit/",
                         {
                             "content": "New content",

@@ -547,11 +547,11 @@ class TestGitOperations:
         # Should work without error
 
         # Limit too low - should clamp to 1
-        changes = temp_repo.get_recent_changes(limit=0)
+        _changes = temp_repo.get_recent_changes(limit=0)
         # Should work without error
 
         # Negative limit - should clamp to 1
-        changes = temp_repo.get_recent_changes(limit=-10)
+        _changes = temp_repo.get_recent_changes(limit=-10)
         # Should work without error
 
     def test_get_recent_changes_empty_repo(self, temp_repo):
