@@ -42,7 +42,7 @@ class Task(models.Model):
     logs = models.TextField(blank=True, default="")
 
     # Celery Integration
-    celery_task_id = models.CharField(max_length=255, null=True, blank=True)
+    celery_task_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     task_type = models.CharField(max_length=255, null=True, blank=True)
     task_args = models.JSONField(null=True, blank=True)
 
