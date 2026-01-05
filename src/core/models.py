@@ -10,6 +10,13 @@ from django.db import models, transaction
 
 logger = logging.getLogger(__name__)
 
+# Constants
+TASK_ID_LENGTH = 12
+TASK_NAME_MAX_LENGTH = 255
+TASK_STATUS_MAX_LENGTH = 25
+CELERY_TASK_ID_MAX_LENGTH = 255
+TASK_TYPE_MAX_LENGTH = 255
+
 
 def generate_short_uuid():
     """Generate a 12-character hexadecimal ID."""
@@ -34,16 +41,20 @@ class Task(models.Model):
     ]
 
     # Identity
-    id = models.CharField(max_length=12, primary_key=True, default=generate_short_uuid, editable=False)
-    name = models.CharField(max_length=255, default=generate_task_name, editable=False)
+    id = models.CharField(
+        max_length=TASK_ID_LENGTH, primary_key=True, default=generate_short_uuid, editable=False
+    )
+    name = models.CharField(max_length=TASK_NAME_MAX_LENGTH, default=generate_task_name, editable=False)
 
     # Status and Logs
-    status = models.CharField(max_length=25, choices=STATUS_CHOICES, default="queued", db_index=True)
+    status = models.CharField(
+        max_length=TASK_STATUS_MAX_LENGTH, choices=STATUS_CHOICES, default="queued", db_index=True
+    )
     logs = models.TextField(blank=True, default="")
 
     # Celery Integration
-    celery_task_id = models.CharField(max_length=255, null=True, blank=True, db_index=True)
-    task_type = models.CharField(max_length=255, null=True, blank=True)
+    celery_task_id = models.CharField(max_length=CELERY_TASK_ID_MAX_LENGTH, null=True, blank=True, db_index=True)
+    task_type = models.CharField(max_length=TASK_TYPE_MAX_LENGTH, null=True, blank=True)
     task_args = models.JSONField(null=True, blank=True)
 
     # Progress Tracking

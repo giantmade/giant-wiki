@@ -6,6 +6,10 @@ from pathlib import Path
 
 from django.conf import settings
 
+# Constants
+DEFAULT_SEARCH_LIMIT = 50
+MAX_SNIPPET_LENGTH = 32
+
 
 @dataclass
 class SearchResult:
@@ -75,7 +79,7 @@ class SearchService:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute("DELETE FROM wiki_fts WHERE path = ?", (path,))
 
-    def search(self, query: str, limit: int = 50) -> list[SearchResult]:
+    def search(self, query: str, limit: int = DEFAULT_SEARCH_LIMIT) -> list[SearchResult]:
         """Search for pages matching the query.
 
         Args:
