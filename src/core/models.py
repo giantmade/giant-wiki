@@ -1,11 +1,14 @@
 """Core models for task management."""
 
+import logging
 import secrets
 from datetime import UTC, datetime
 
 import randomname
 from celery import current_app
 from django.db import models, transaction
+
+logger = logging.getLogger(__name__)
 
 
 def generate_short_uuid():
@@ -221,6 +224,13 @@ def dispatch_task(celery_task_name, args=None, kwargs=None, initial_logs=""):
 
         except Exception as e:
             # Failed dispatch - mark task as failed for visibility
+            logger.error(
+                "Failed to dispatch task %s (%s): %s",
+                task.id,
+                celery_task_name,
+                e,
+                exc_info=True,
+            )
             task.status = "failed"
             task.logs += f"\n\nFailed to dispatch task: {e}"
             task.save(update_fields=["status", "logs"])
