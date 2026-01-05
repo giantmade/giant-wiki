@@ -41,9 +41,7 @@ class Task(models.Model):
     ]
 
     # Identity
-    id = models.CharField(
-        max_length=TASK_ID_LENGTH, primary_key=True, default=generate_short_uuid, editable=False
-    )
+    id = models.CharField(max_length=TASK_ID_LENGTH, primary_key=True, default=generate_short_uuid, editable=False)
     name = models.CharField(max_length=TASK_NAME_MAX_LENGTH, default=generate_task_name, editable=False)
 
     # Status and Logs

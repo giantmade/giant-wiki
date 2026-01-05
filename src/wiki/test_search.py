@@ -556,9 +556,7 @@ class TestViews:
         """Edit view GET for existing page loads correctly."""
         from wiki.services.git_storage import WikiPage
 
-        mock_page = WikiPage(
-            path="testpage", content="# Content", metadata={"title": "Test Page"}
-        )
+        mock_page = WikiPage(path="testpage", content="# Content", metadata={"title": "Test Page"})
         mock_storage.return_value.get_page.return_value = mock_page
         mock_storage.return_value.list_attachments.return_value = []
 
@@ -579,23 +577,17 @@ class TestViews:
         from wiki.services.git_storage import WikiPage
 
         mock_storage.return_value.get_page.return_value = None
-        mock_storage.return_value.save_page.return_value = WikiPage(
-            path="newpage", content="New content"
-        )
+        mock_storage.return_value.save_page.return_value = WikiPage(path="newpage", content="New content")
 
         with patch("wiki.views.get_search_service") as mock_search:
             with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
                 with patch("wiki.views.dispatch_task") as mock_sync:
-                    response = client.post(
-                        "/wiki/newpage/edit/", {"content": "New content"}
-                    )
+                    response = client.post("/wiki/newpage/edit/", {"content": "New content"})
 
         assert response.status_code == 302
         assert "/wiki/newpage/" in response.url
         mock_storage.return_value.save_page.assert_called_once()
-        mock_search.return_value.add_page.assert_called_once_with(
-            "newpage", "New content"
-        )
+        mock_search.return_value.add_page.assert_called_once_with("newpage", "New content")
         mock_invalidate.assert_called_once()  # New page should invalidate cache
         mock_sync.assert_called_once()
 
@@ -629,9 +621,7 @@ class TestViews:
         """Edit view POST with changed title invalidates sidebar cache."""
         from wiki.services.git_storage import WikiPage
 
-        existing_page = WikiPage(
-            path="testpage", content="Content", metadata={"title": "Old Title"}
-        )
+        existing_page = WikiPage(path="testpage", content="Content", metadata={"title": "Old Title"})
         mock_storage.return_value.get_page.return_value = existing_page
 
         with patch("wiki.views.get_search_service") as _mock_search:
@@ -649,9 +639,7 @@ class TestViews:
         """Edit view POST with unchecked checkbox sets field to False."""
         from wiki.services.git_storage import WikiPage
 
-        existing_page = WikiPage(
-            path="testpage", content="Content", metadata={"published": True}
-        )
+        existing_page = WikiPage(path="testpage", content="Content", metadata={"published": True})
         mock_storage.return_value.get_page.return_value = existing_page
 
         with patch("wiki.views.get_search_service"):

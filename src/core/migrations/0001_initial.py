@@ -7,43 +7,92 @@ import core.models
 
 
 class Migration(migrations.Migration):
-
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Task',
+            name="Task",
             fields=[
-                ('id', models.CharField(default=core.models.generate_short_uuid, editable=False, max_length=12, primary_key=True, serialize=False)),
-                ('name', models.CharField(default=core.models.generate_task_name, editable=False, max_length=255)),
-                ('status', models.CharField(choices=[('queued', 'Queued'), ('in_progress', 'In Progress'), ('success', 'Success'), ('completed_with_errors', 'Completed with Errors'), ('failed', 'Failed'), ('cancelled', 'Cancelled')], db_index=True, default='queued', max_length=25)),
-                ('logs', models.TextField(blank=True, default='')),
-                ('celery_task_id', models.CharField(blank=True, max_length=255, null=True)),
-                ('task_type', models.CharField(blank=True, max_length=255, null=True)),
-                ('task_args', models.JSONField(blank=True, null=True)),
-                ('total_items', models.PositiveIntegerField(blank=True, null=True)),
-                ('completed_items', models.PositiveIntegerField(default=0)),
-                ('created_at', models.DateTimeField(auto_now_add=True, db_index=True)),
+                (
+                    "id",
+                    models.CharField(
+                        default=core.models.generate_short_uuid,
+                        editable=False,
+                        max_length=12,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                ("name", models.CharField(default=core.models.generate_task_name, editable=False, max_length=255)),
+                (
+                    "status",
+                    models.CharField(
+                        choices=[
+                            ("queued", "Queued"),
+                            ("in_progress", "In Progress"),
+                            ("success", "Success"),
+                            ("completed_with_errors", "Completed with Errors"),
+                            ("failed", "Failed"),
+                            ("cancelled", "Cancelled"),
+                        ],
+                        db_index=True,
+                        default="queued",
+                        max_length=25,
+                    ),
+                ),
+                ("logs", models.TextField(blank=True, default="")),
+                ("celery_task_id", models.CharField(blank=True, max_length=255, null=True)),
+                ("task_type", models.CharField(blank=True, max_length=255, null=True)),
+                ("task_args", models.JSONField(blank=True, null=True)),
+                ("total_items", models.PositiveIntegerField(blank=True, null=True)),
+                ("completed_items", models.PositiveIntegerField(default=0)),
+                ("created_at", models.DateTimeField(auto_now_add=True, db_index=True)),
             ],
             options={
-                'ordering': ['-created_at'],
-                'indexes': [models.Index(fields=['-created_at'], name='core_task_created_0bd9f2_idx')],
+                "ordering": ["-created_at"],
+                "indexes": [models.Index(fields=["-created_at"], name="core_task_created_0bd9f2_idx")],
             },
         ),
         migrations.CreateModel(
-            name='TaskAuditTrail',
+            name="TaskAuditTrail",
             fields=[
-                ('id', models.CharField(default=core.models.generate_short_uuid, editable=False, max_length=12, primary_key=True, serialize=False)),
-                ('event', models.CharField(choices=[('created', 'Created'), ('started', 'Started'), ('completed', 'Completed'), ('completed_with_errors', 'Completed with Errors'), ('failed', 'Failed'), ('cancelled', 'Cancelled')], max_length=25)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='audit_trail', to='core.task')),
+                (
+                    "id",
+                    models.CharField(
+                        default=core.models.generate_short_uuid,
+                        editable=False,
+                        max_length=12,
+                        primary_key=True,
+                        serialize=False,
+                    ),
+                ),
+                (
+                    "event",
+                    models.CharField(
+                        choices=[
+                            ("created", "Created"),
+                            ("started", "Started"),
+                            ("completed", "Completed"),
+                            ("completed_with_errors", "Completed with Errors"),
+                            ("failed", "Failed"),
+                            ("cancelled", "Cancelled"),
+                        ],
+                        max_length=25,
+                    ),
+                ),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                (
+                    "task",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="audit_trail", to="core.task"
+                    ),
+                ),
             ],
             options={
-                'ordering': ['created_at'],
-                'indexes': [models.Index(fields=['task', 'created_at'], name='core_taskau_task_id_acb74b_idx')],
+                "ordering": ["created_at"],
+                "indexes": [models.Index(fields=["task", "created_at"], name="core_taskau_task_id_acb74b_idx")],
             },
         ),
     ]
