@@ -48,8 +48,7 @@ class SearchService:
         Returns:
             Number of pages indexed
         """
-        conn = sqlite3.connect(self.db_path)
-        try:
+        with sqlite3.connect(self.db_path) as conn:
             # Clear existing index
             conn.execute("DELETE FROM wiki_fts")
 
@@ -58,15 +57,11 @@ class SearchService:
                 "INSERT INTO wiki_fts(path, content) VALUES (?, ?)",
                 [(p["path"], p["content"]) for p in pages],
             )
-            conn.commit()
             return len(pages)
-        finally:
-            conn.close()
 
     def add_page(self, path: str, content: str):
         """Add or update a single page in the index."""
-        conn = sqlite3.connect(self.db_path)
-        try:
+        with sqlite3.connect(self.db_path) as conn:
             # Remove existing entry
             conn.execute("DELETE FROM wiki_fts WHERE path = ?", (path,))
             # Add new entry
@@ -74,18 +69,11 @@ class SearchService:
                 "INSERT INTO wiki_fts(path, content) VALUES (?, ?)",
                 (path, content),
             )
-            conn.commit()
-        finally:
-            conn.close()
 
     def remove_page(self, path: str):
         """Remove a page from the index."""
-        conn = sqlite3.connect(self.db_path)
-        try:
+        with sqlite3.connect(self.db_path) as conn:
             conn.execute("DELETE FROM wiki_fts WHERE path = ?", (path,))
-            conn.commit()
-        finally:
-            conn.close()
 
     def search(self, query: str, limit: int = 50) -> list[SearchResult]:
         """Search for pages matching the query.
@@ -100,8 +88,7 @@ class SearchService:
         if not query.strip():
             return []
 
-        conn = sqlite3.connect(self.db_path)
-        try:
+        with sqlite3.connect(self.db_path) as conn:
             # Escape special FTS5 characters
             safe_query = query.replace('"', '""')
 
@@ -137,8 +124,6 @@ class SearchService:
                 )
 
                 return [SearchResult(path=row[0], snippet=row[1] + "...", score=row[2]) for row in cursor.fetchall()]
-        finally:
-            conn.close()
 
 
 # Singleton instance

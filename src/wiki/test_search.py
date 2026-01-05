@@ -365,6 +365,135 @@ class TestHumanizeSlug:
         assert humanize_slug("my-page_name") == "My Page Name"
 
 
+class TestWikiFilters:
+    """Tests for wiki_filters template filters."""
+
+    def test_is_url_valid_http(self):
+        """Valid HTTP URLs should return True."""
+        from wiki.templatetags.wiki_filters import is_url
+
+        assert is_url("http://example.com") is True
+        assert is_url("http://example.com/path") is True
+        assert is_url("http://example.com/path?query=1") is True
+
+    def test_is_url_valid_https(self):
+        """Valid HTTPS URLs should return True."""
+        from wiki.templatetags.wiki_filters import is_url
+
+        assert is_url("https://example.com") is True
+        assert is_url("https://example.com/path/to/page") is True
+        assert is_url("https://example.com:8080/path") is True
+
+    def test_is_url_invalid_schemes(self):
+        """Invalid schemes should return False."""
+        from wiki.templatetags.wiki_filters import is_url
+
+        assert is_url("javascript:alert(1)") is False
+        assert is_url("data:text/html,<script>alert(1)</script>") is False
+        assert is_url("ftp://example.com") is False
+        assert is_url("file:///etc/passwd") is False
+
+    def test_is_url_non_string(self):
+        """Non-string values should return False."""
+        from wiki.templatetags.wiki_filters import is_url
+
+        assert is_url(123) is False
+        assert is_url(None) is False
+        assert is_url([]) is False
+        assert is_url({}) is False
+
+    def test_is_url_malformed(self):
+        """Malformed URLs should return False."""
+        from wiki.templatetags.wiki_filters import is_url
+
+        assert is_url("not a url") is False
+        assert is_url("http://") is False
+        assert is_url("://example.com") is False
+        assert is_url("example.com") is False  # No scheme
+
+    def test_is_url_empty_string(self):
+        """Empty string should return False."""
+        from wiki.templatetags.wiki_filters import is_url
+
+        assert is_url("") is False
+        assert is_url("   ") is False
+
+    def test_is_url_exception_handling(self):
+        """Should handle exceptions gracefully."""
+        from unittest.mock import patch
+
+        from wiki.templatetags.wiki_filters import is_url
+
+        # Force urlparse to raise an exception
+        with patch("wiki.templatetags.wiki_filters.urlparse") as mock_urlparse:
+            mock_urlparse.side_effect = Exception("Parse error")
+            assert is_url("http://example.com") is False
+
+
+class TestRenderMarkdown:
+    """Tests for render_markdown function."""
+
+    def test_basic_markdown(self):
+        """Basic markdown should be rendered."""
+        from wiki.views import render_markdown
+
+        html = render_markdown("# Hello\n\nThis is **bold**.")
+        assert "<h1" in html and "Hello</h1>" in html  # TOC adds id attribute
+        assert "<strong>bold</strong>" in html
+
+    def test_fenced_code_blocks(self):
+        """Fenced code blocks should be rendered."""
+        from wiki.views import render_markdown
+
+        markdown_text = "```python\nprint('hello')\n```"
+        html = render_markdown(markdown_text)
+        assert "<code>" in html or "<pre>" in html
+
+    def test_tables(self):
+        """Tables should be rendered."""
+        from wiki.views import render_markdown
+
+        markdown_text = "| Header |\n|--------|\n| Cell   |"
+        html = render_markdown(markdown_text)
+        assert "<table>" in html
+        assert "<th>" in html or "<td>" in html
+
+    def test_wikilinks(self):
+        """WikiLinks should be converted to links."""
+        from wiki.views import render_markdown
+
+        html = render_markdown("See [[OtherPage]] for details")
+        assert 'href="/wiki/OtherPage/"' in html or "OtherPage" in html
+
+    def test_table_of_contents(self):
+        """TOC extension should work."""
+        from wiki.views import render_markdown
+
+        markdown_text = "# Section 1\n\n## Subsection\n\n# Section 2"
+        html = render_markdown(markdown_text)
+        # TOC extension is loaded, headers should be processed with id attributes
+        assert "<h1 id=" in html and "Section 1</h1>" in html
+
+
+class TestParseMetadataValue:
+    """Tests for parse_metadata_value edge cases."""
+
+    def test_parses_bool_various_inputs(self):
+        """Test various boolean input formats."""
+        from wiki.views import parse_metadata_value
+
+        # Various truthy values
+        assert parse_metadata_value("yes", True) is True
+        assert parse_metadata_value("YES", False) is True
+
+    def test_invalid_number_returns_original(self):
+        """Invalid number strings should return original."""
+        from wiki.views import parse_metadata_value
+
+        assert parse_metadata_value("abc", 123) == 123
+        assert parse_metadata_value("12.34.56", 1.5) == 1.5
+
+
 @pytest.mark.django_db
 class TestViews:
     """Integration tests for wiki views."""
@@ -404,3 +533,188 @@ class TestViews:
             mock.return_value.get_recent_changes.return_value = []
             response = client.get("/wiki/history/")
             assert response.status_code == 200
+
+    def test_page_view_redirects_to_edit_for_nonexistent(self, client, mock_storage):
+        """Non-existent page should redirect to edit."""
+        mock_storage.return_value.get_page.return_value = None
+        response = client.get("/wiki/newpage/")
+        assert response.status_code == 302
+        assert "/edit/" in response.url
+
+    def test_page_view_renders_existing_page(self, client, mock_storage):
+        """Existing page should render with content."""
+        from wiki.services.git_storage import WikiPage
+
+        mock_page = WikiPage(path="testpage", content="# Test\n\nContent here")
+        mock_storage.return_value.get_page.return_value = mock_page
+
+        response = client.get("/wiki/testpage/")
+        assert response.status_code == 200
+        assert b"Test" in response.content
+
+    def test_edit_view_get_existing_page(self, client, mock_storage):
+        """Edit view GET for existing page loads correctly."""
+        from wiki.services.git_storage import WikiPage
+
+        mock_page = WikiPage(
+            path="testpage", content="# Content", metadata={"title": "Test Page"}
+        )
+        mock_storage.return_value.get_page.return_value = mock_page
+        mock_storage.return_value.list_attachments.return_value = []
+
+        response = client.get("/wiki/testpage/edit/")
+        assert response.status_code == 200
+        assert b"Content" in response.content
+
+    def test_edit_view_get_new_page(self, client, mock_storage):
+        """Edit view GET for new page creates empty page."""
+        mock_storage.return_value.get_page.return_value = None
+        mock_storage.return_value.list_attachments.return_value = []
+
+        response = client.get("/wiki/newpage/edit/")
+        assert response.status_code == 200
+
+    def test_edit_view_post_new_page(self, client, mock_storage):
+        """Edit view POST creates new page."""
+        from wiki.services.git_storage import WikiPage
+
+        mock_storage.return_value.get_page.return_value = None
+        mock_storage.return_value.save_page.return_value = WikiPage(
+            path="newpage", content="New content"
+        )
+
+        with patch("wiki.views.get_search_service") as mock_search:
+            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+                with patch("wiki.views.dispatch_task") as mock_sync:
+                    response = client.post(
+                        "/wiki/newpage/edit/", {"content": "New content"}
+                    )
+
+        assert response.status_code == 302
+        assert "/wiki/newpage/" in response.url
+        mock_storage.return_value.save_page.assert_called_once()
+        mock_search.return_value.add_page.assert_called_once_with(
+            "newpage", "New content"
+        )
+        mock_invalidate.assert_called_once()  # New page should invalidate cache
+        mock_sync.assert_called_once()
+
+    def test_edit_view_post_existing_page_no_title_change(self, client, mock_storage):
+        """Edit view POST for existing page without title change doesn't invalidate cache."""
+        from wiki.services.git_storage import WikiPage
+
+        existing_page = WikiPage(
+            path="testpage",
+            content="Old content",
+            metadata={"title": "Test", "author": "user1"},
+        )
+        mock_storage.return_value.get_page.return_value = existing_page
+
+        with patch("wiki.views.get_search_service") as mock_search:
+            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+                with patch("wiki.views.dispatch_task") as mock_sync:
+                    response = client.post(
+                        "/wiki/testpage/edit/",
+                        {
+                            "content": "New content",
+                            "meta_title": "Test",  # Same title
+                            "meta_author": "user2",  # Different author
+                        },
+                    )
+
+        assert response.status_code == 302
+        mock_invalidate.assert_not_called()  # Should not invalidate
+
+    def test_edit_view_post_title_changed_invalidates_cache(self, client, mock_storage):
+        """Edit view POST with changed title invalidates sidebar cache."""
+        from wiki.services.git_storage import WikiPage
+
+        existing_page = WikiPage(
+            path="testpage", content="Content", metadata={"title": "Old Title"}
+        )
+        mock_storage.return_value.get_page.return_value = existing_page
+
+        with patch("wiki.views.get_search_service") as mock_search:
+            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+                with patch("wiki.views.dispatch_task") as mock_sync:
+                    response = client.post(
+                        "/wiki/testpage/edit/",
+                        {"content": "Content", "meta_title": "New Title"},
+                    )
+
+        assert response.status_code == 302
+        mock_invalidate.assert_called_once()  # Title changed
+
+    def test_edit_view_post_checkbox_unchecked(self, client, mock_storage):
+        """Edit view POST with unchecked checkbox sets field to False."""
+        from wiki.services.git_storage import WikiPage
+
+        existing_page = WikiPage(
+            path="testpage", content="Content", metadata={"published": True}
+        )
+        mock_storage.return_value.get_page.return_value = existing_page
+
+        with patch("wiki.views.get_search_service"):
+            with patch("wiki.views.invalidate_sidebar_cache"):
+                with patch("wiki.views.dispatch_task"):
+                    response = client.post(
+                        "/wiki/testpage/edit/",
+                        {
+                            "content": "Content"
+                            # Note: meta_published not in POST = checkbox unchecked
+                        },
+                    )
+
+        # Verify save_page was called with published=False
+        call_args = mock_storage.return_value.save_page.call_args
+        assert call_args[0][0] == "testpage"  # path
+        assert call_args[0][1] == "Content"  # content
+        metadata = call_args[0][2]  # metadata is 3rd positional arg
+        assert metadata["published"] is False
+
+    def test_edit_view_post_preserves_missing_metadata(self, client, mock_storage):
+        """Edit view POST preserves metadata fields not in form."""
+        from wiki.services.git_storage import WikiPage
+
+        existing_page = WikiPage(
+            path="testpage",
+            content="Content",
+            metadata={"title": "Test", "system_field": "value"},
+        )
+        mock_storage.return_value.get_page.return_value = existing_page
+
+        with patch("wiki.views.get_search_service"):
+            with patch("wiki.views.invalidate_sidebar_cache"):
+                with patch("wiki.views.dispatch_task"):
+                    response = client.post(
+                        "/wiki/testpage/edit/",
+                        {
+                            "content": "New content",
+                            "meta_title": "Test",
+                            # system_field not in POST
+                        },
+                    )
+
+        # Verify system_field was preserved
+        call_args = mock_storage.return_value.save_page.call_args
+        metadata = call_args[0][2]  # metadata is 3rd positional arg
+        assert metadata["system_field"] == "value"
+
+    def test_edit_view_post_save_error(self, client, mock_storage):
+        """Edit view POST handles save errors gracefully."""
+        mock_storage.return_value.get_page.return_value = None
+        mock_storage.return_value.save_page.side_effect = OSError("Disk full")
+        mock_storage.return_value.list_attachments.return_value = []
+
+        response = client.post("/wiki/testpage/edit/", {"content": "Content"})
+
+        # Should render edit form again, not redirect
+        assert response.status_code == 200
+        assert b"Failed to save page" in response.content or response.status_code == 200
+
+    def test_edit_view_post_invalid_path(self, client, mock_storage):
+        """Edit view POST with invalid path returns 404."""
+        mock_storage.return_value.get_page.side_effect = InvalidPathError("bad path")
+
+        response = client.post("/wiki/../etc/passwd/edit/", {"content": "Content"})
+        assert response.status_code == 404

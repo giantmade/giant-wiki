@@ -11,6 +11,10 @@ urlpatterns = [
     path("", core_views.home, name="home"),
     # Health check for Railway
     path("health/", core_views.health, name="health"),
+    # Tasks
+    path("tasks/<str:task_id>/", core_views.task_detail, name="task_detail"),
+    path("tasks/<str:task_id>/status/", core_views.task_status_json, name="task_status_json"),
+    path("tasks/<str:task_id>/cancel/", core_views.task_cancel, name="task_cancel"),
     # Wiki pages
     path("wiki/", wiki_views.page, name="wiki"),
     path("wiki/history/", wiki_views.history, name="history"),

@@ -2,7 +2,6 @@
 
 from datetime import datetime, timedelta
 
-import pytest
 from django.utils import timezone
 
 from wiki.templatetags.staleness import (

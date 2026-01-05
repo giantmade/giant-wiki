@@ -10,10 +10,11 @@ from django.urls import reverse
 from markdown import markdown
 from markdown.extensions.wikilinks import WikiLinkExtension
 
+from core.models import dispatch_task
+
 from .services.git_storage import InvalidPathError, WikiPage, get_storage_service
 from .services.search import get_search_service
 from .services.sidebar import invalidate_sidebar_cache
-from .tasks import sync_to_remote
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +137,11 @@ def edit(request, page_path: str):
                 invalidate_sidebar_cache()
 
             # Queue background sync to Git remote
-            sync_to_remote.delay(f"Update: {page_path}")
+            dispatch_task(
+                "wiki.sync_to_remote",
+                kwargs={"message": f"Update: {page_path}"},
+                initial_logs=f"Syncing changes for {page_path}",
+            )
 
             messages.success(request, "Page saved successfully.")
             return redirect(reverse("page", kwargs={"page_path": page_path}))

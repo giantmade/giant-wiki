@@ -62,6 +62,8 @@ def validate_commit_message(message: str) -> str:
     Raises:
         ValueError: If message is invalid
     """
+    message = message.strip()
+
     if not message:
         raise ValueError("Commit message cannot be empty")
 
@@ -71,7 +73,7 @@ def validate_commit_message(message: str) -> str:
     if "\x00" in message:
         raise ValueError("Commit message contains invalid characters")
 
-    return message.strip()
+    return message
 
 
 def get_metadata_field_type(value) -> str:
