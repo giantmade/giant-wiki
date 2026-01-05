@@ -10,7 +10,13 @@ from django.test import TestCase
 from core.models import Task
 from wiki.services.git_storage import GitOperationError, GitStorageService
 from wiki.services.search import SearchService
-from wiki.tasks import rebuild_search_index, rebuild_search_index_sync, sync_from_remote, sync_to_remote
+from wiki.tasks import (
+    rebuild_search_index,
+    rebuild_search_index_sync,
+    sync_from_remote,
+    sync_to_remote,
+    warm_sidebar_cache,
+)
 
 
 class TestSyncToRemote(TestCase):
@@ -80,10 +86,11 @@ class TestSyncToRemote(TestCase):
 class TestSyncFromRemote(TestCase):
     """Tests for sync_from_remote task."""
 
+    @patch("wiki.tasks.warm_sidebar_cache")
     @patch("core.models.dispatch_task")
     @patch("wiki.tasks.invalidate_sidebar_cache")
     @patch("wiki.tasks.get_storage_service")
-    def test_sync_from_remote_success(self, mock_get_storage, mock_invalidate, mock_dispatch):
+    def test_sync_from_remote_success(self, mock_get_storage, mock_invalidate, mock_dispatch, mock_warm_cache):
         """Test successful sync from remote."""
         task = Task.objects.create()
         mock_service = MagicMock()
@@ -96,6 +103,7 @@ class TestSyncFromRemote(TestCase):
         mock_service.pull.assert_called_once()
         mock_dispatch.assert_called_once()
         mock_invalidate.assert_called_once()
+        mock_warm_cache.delay.assert_called_once()
 
     @patch("core.models.dispatch_task")
     @patch("wiki.tasks.invalidate_sidebar_cache")
@@ -294,3 +302,56 @@ Content here"""
         # Verify the page is searchable
         results = search.search("Content here")
         assert len(results) >= 1
+
+
+class TestWarmSidebarCache(TestCase):
+    """Tests for warm_sidebar_cache task."""
+
+    @patch("django.core.cache.cache.set")
+    @patch("wiki.services.git_storage.get_storage_service")
+    def test_warm_sidebar_cache_populates_redis(self, mock_get_storage, mock_cache_set):
+        """Test that cache warming populates Redis with page titles."""
+        mock_service = MagicMock()
+        mock_service.get_page_titles.return_value = {
+            "page1": "Page 1",
+            "page2": "Page 2",
+            "page3": "Page 3",
+        }
+        mock_get_storage.return_value = mock_service
+
+        count = warm_sidebar_cache()
+
+        assert count == 3
+        mock_service.get_page_titles.assert_called_once()
+        mock_cache_set.assert_called_once()
+        # Verify the cache was set with correct key, value, and TTL
+        call_args = mock_cache_set.call_args
+        assert call_args[0][0] == "wiki_sidebar_pages"
+        assert call_args[0][1] == {"page1": "Page 1", "page2": "Page 2", "page3": "Page 3"}
+        assert call_args[0][2] == 1800  # 30 minutes
+
+    @patch("django.core.cache.cache.set")
+    @patch("wiki.services.git_storage.get_storage_service")
+    def test_warm_sidebar_cache_empty_repo(self, mock_get_storage, mock_cache_set):
+        """Test cache warming with empty repository."""
+        mock_service = MagicMock()
+        mock_service.get_page_titles.return_value = {}
+        mock_get_storage.return_value = mock_service
+
+        count = warm_sidebar_cache()
+
+        assert count == 0
+        mock_cache_set.assert_called_once()
+
+    @patch("django.core.cache.cache.set")
+    @patch("wiki.services.git_storage.get_storage_service")
+    def test_warm_sidebar_cache_returns_count(self, mock_get_storage, mock_cache_set):
+        """Test that warm_sidebar_cache returns the number of pages cached."""
+        mock_service = MagicMock()
+        mock_service.get_page_titles.return_value = {"page1": "Page 1", "page2": "Page 2"}
+        mock_get_storage.return_value = mock_service
+
+        count = warm_sidebar_cache()
+
+        assert isinstance(count, int)
+        assert count == 2

@@ -102,6 +102,19 @@ attachments/
 | `CELERY_BROKER_URL` | Redis URL for Celery |
 | `GIT_SSH_KEY` | Base64-encoded SSH key (production) |
 
+## Performance Optimizations
+
+### Sidebar Cache Warming
+
+The sidebar page listing is cached in Redis for fast access:
+
+- **Startup:** Cache automatically warmed via `warm_sidebar_cache` Celery task
+- **TTL:** 30 minutes (configurable via `SIDEBAR_CACHE_TTL`)
+- **Git sync:** Cache re-warmed automatically after pulling changes
+- **Fallback:** File scanning if cache miss (rare)
+
+Implementation in `src/core/apps.py` (CoreConfig.ready()) and `src/wiki/tasks.py`.
+
 ## Deployment
 
 Deployed to Railway with Tailscale forwarder for private access:

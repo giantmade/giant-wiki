@@ -72,6 +72,10 @@ def sync_from_remote(self, task_id):
             invalidate_sidebar_cache()
             task.logs += "\nInvalidated sidebar cache"
 
+            # Re-warm cache in background
+            warm_sidebar_cache.delay()
+            task.logs += "\nTriggered sidebar cache warming"
+
             task.complete(success=True)
         else:
             task.complete(success=True, logs="\nNo changes to pull")
@@ -141,3 +145,17 @@ def rebuild_search_index(self, task_id):
     except Exception as e:
         task.complete(success=False, logs=f"\nFailed to rebuild index: {e}")
         raise
+
+
+@shared_task(name="wiki.warm_sidebar_cache")
+def warm_sidebar_cache():
+    """Warm the sidebar cache on startup."""
+    from django.core.cache import cache
+
+    from .services.git_storage import get_storage_service
+    from .services.sidebar import SIDEBAR_CACHE_KEY, SIDEBAR_CACHE_TTL
+
+    storage = get_storage_service()
+    pages = storage.get_page_titles()
+    cache.set(SIDEBAR_CACHE_KEY, pages, SIDEBAR_CACHE_TTL)
+    return len(pages)

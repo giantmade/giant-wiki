@@ -8,7 +8,7 @@ from django.core.cache import cache
 from .git_storage import get_storage_service
 
 SIDEBAR_CACHE_KEY = "wiki_sidebar_pages"
-SIDEBAR_CACHE_TTL = 300  # 5 minutes
+SIDEBAR_CACHE_TTL = 1800  # 30 minutes
 
 
 class SidebarItem(NamedTuple):
