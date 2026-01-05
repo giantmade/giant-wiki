@@ -64,15 +64,67 @@
         .sidebar-content ul { list-style: none; padding: 0; }
         .sidebar-content li { margin-bottom: 0.25rem; }
         .sidebar-content p { margin-bottom: 0.5rem; }
+
+        /* Resizable sidebar variables */
+        :root {
+            --sidebar-width: 256px;
+        }
+
+        .sidebar-resizable {
+            width: var(--sidebar-width) !important;
+        }
+
+        .main-with-sidebar {
+            margin-left: var(--sidebar-width) !important;
+        }
+
+        /* Resize handle */
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            cursor: col-resize;
+            background: transparent;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background: rgba(34, 197, 94, 0.5);
+        }
+
+        /* Dragging state */
+        body.sidebar-resizing {
+            cursor: col-resize !important;
+            user-select: none !important;
+        }
+
+        body.sidebar-resizing * {
+            cursor: col-resize !important;
+        }
     </style>
 
     {% block extra_head %}{% endblock %}
 </head>
 
-<body class="font-sans font-light bg-gray-50 text-gray-900">
+<body class="font-sans font-light bg-gray-50 text-gray-900"
+      x-data="sidebarResize()"
+      x-init="init()"
+      :class="{ 'sidebar-resizing': isResizing }">
     <div class="flex min-h-screen">
         <!-- Sidebar -->
-        <nav class="fixed left-0 top-0 h-full w-64 bg-gray-900 text-gray-300 overflow-y-auto">
+        <nav class="sidebar-resizable fixed left-0 top-0 h-full bg-gray-900 text-gray-300 overflow-y-auto">
+            <!-- Resize handle -->
+            <div class="resize-handle"
+                 :class="{ 'dragging': isResizing }"
+                 @mousedown="startResize"
+                 title="Drag to resize sidebar"
+                 aria-label="Resize sidebar">
+            </div>
+
             <!-- Logo/Title -->
             <div class="px-6 py-4 border-b border-gray-800">
                 <a href="{% url 'wiki' %}" class="flex items-center space-x-3 text-xl font-light tracking-wide text-white hover:text-green-400 transition-colors">
@@ -149,7 +201,7 @@
         </nav>
 
         <!-- Main content -->
-        <main class="flex-1 ml-64 min-w-0 overflow-hidden">
+        <main class="main-with-sidebar flex-1 min-w-0 overflow-hidden">
             {% block header %}{% endblock %}
 
             <div class="p-6">
@@ -157,6 +209,107 @@
             </div>
         </main>
     </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('sidebarResize', () => ({
+                // State
+                sidebarWidth: 256,
+                isResizing: false,
+                startX: 0,
+                startWidth: 0,
+
+                // Constants
+                MIN_WIDTH: 200,
+                MAX_WIDTH: 600,
+                COOKIE_NAME: 'sidebar_width',
+                COOKIE_DAYS: 365,
+
+                // Initialize: Load from cookie
+                init() {
+                    const savedWidth = this.getCookie(this.COOKIE_NAME);
+                    if (savedWidth) {
+                        const width = parseInt(savedWidth, 10);
+                        if (!isNaN(width) && width >= this.MIN_WIDTH && width <= this.MAX_WIDTH) {
+                            this.sidebarWidth = width;
+                        }
+                    }
+                    this.updateCSSVariable();
+                },
+
+                // Start resize
+                startResize(event) {
+                    this.isResizing = true;
+                    this.startX = event.clientX;
+                    this.startWidth = this.sidebarWidth;
+
+                    const handleResize = this.handleResize.bind(this);
+                    const stopResize = this.stopResize.bind(this);
+
+                    // Store bound functions for removal
+                    this.boundHandleResize = handleResize;
+                    this.boundStopResize = stopResize;
+
+                    document.addEventListener('mousemove', handleResize);
+                    document.addEventListener('mouseup', stopResize);
+
+                    event.preventDefault();
+                },
+
+                // Handle resize
+                handleResize(event) {
+                    if (!this.isResizing) return;
+
+                    const deltaX = event.clientX - this.startX;
+                    let newWidth = this.startWidth + deltaX;
+
+                    // Clamp to min/max
+                    newWidth = Math.max(this.MIN_WIDTH, Math.min(this.MAX_WIDTH, newWidth));
+
+                    this.sidebarWidth = newWidth;
+                    this.updateCSSVariable();
+                },
+
+                // Stop resize
+                stopResize() {
+                    if (!this.isResizing) return;
+
+                    this.isResizing = false;
+
+                    document.removeEventListener('mousemove', this.boundHandleResize);
+                    document.removeEventListener('mouseup', this.boundStopResize);
+
+                    // Save to cookie
+                    this.setCookie(this.COOKIE_NAME, this.sidebarWidth, this.COOKIE_DAYS);
+                },
+
+                // Update CSS variable
+                updateCSSVariable() {
+                    document.documentElement.style.setProperty('--sidebar-width', `${this.sidebarWidth}px`);
+                },
+
+                // Cookie utilities
+                setCookie(name, value, days) {
+                    const date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    const expires = `expires=${date.toUTCString()}`;
+                    document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax`;
+                },
+
+                getCookie(name) {
+                    const nameEQ = `${name}=`;
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        let cookie = cookies[i].trim();
+                        if (cookie.indexOf(nameEQ) === 0) {
+                            return cookie.substring(nameEQ.length);
+                        }
+                    }
+                    return null;
+                }
+            }));
+        });
+    </script>
 
     {% block extra_js %}{% endblock %}
 </body>
