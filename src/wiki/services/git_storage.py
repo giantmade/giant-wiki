@@ -15,13 +15,9 @@ logger = logging.getLogger(__name__)
 class InvalidPathError(ValueError):
     """Raised when a page path contains invalid characters."""
 
-    pass
-
 
 class GitOperationError(Exception):
     """Raised when a git operation fails."""
-
-    pass
 
 
 def validate_path(path: str) -> str:
