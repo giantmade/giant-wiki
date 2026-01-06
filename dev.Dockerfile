@@ -5,10 +5,15 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Install git and ssh for Git storage backend
+# Install system dependencies
+# - git, openssh-client: Git storage backend
+# - default-libmysqlclient-dev, pkg-config, build-essential: MySQL client compilation
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
     openssh-client \
+    default-libmysqlclient-dev \
+    pkg-config \
+    build-essential \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv
