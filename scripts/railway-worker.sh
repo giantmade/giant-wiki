@@ -3,6 +3,11 @@
 echo "=== Railway Worker Script ==="
 echo "Current directory: $(pwd)"
 
+# Configure Git identity for commits
+git config --global user.email "wiki@giantmade.com"
+git config --global user.name "Giant Wiki"
+echo "Configured Git identity"
+
 # Setup SSH key if provided
 if [ -n "$GIT_SSH_KEY" ]; then
     echo "Setting up SSH key..."
