@@ -18,14 +18,16 @@ if [ -n "$WIKI_REPO_URL" ]; then
     if [ ! -d "$WIKI_REPO_PATH/.git" ]; then
         echo "Cloning wiki content repository..."
         if [ -n "$WIKI_REPO_BRANCH" ]; then
-            git clone --branch "$WIKI_REPO_BRANCH" "$WIKI_REPO_URL" "$WIKI_REPO_PATH"
+            git clone --branch "$WIKI_REPO_BRANCH" "$WIKI_REPO_URL" "$WIKI_REPO_PATH" || echo "Warning: Failed to clone repository"
         else
-            git clone "$WIKI_REPO_URL" "$WIKI_REPO_PATH"
+            git clone "$WIKI_REPO_URL" "$WIKI_REPO_PATH" || echo "Warning: Failed to clone repository"
         fi
     else
         echo "Pulling latest wiki content..."
         cd "$WIKI_REPO_PATH" && git pull --rebase || true
     fi
+else
+    echo "No WIKI_REPO_URL configured, skipping git clone"
 fi
 
 cd /app/src
