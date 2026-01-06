@@ -225,9 +225,13 @@ def rebuild_search_index_sync() -> int:
 
     pages = []
     for path in storage.list_pages():
-        page = storage.get_page(path)
-        if page:
-            pages.append({"path": page.path, "content": page.content})
+        try:
+            page = storage.get_page(path)
+            if page:
+                pages.append({"path": page.path, "content": page.content})
+        except (OSError, PermissionError) as e:
+            logger.warning(f"Failed to read page {path}: {e}")
+            continue
 
     search_service.rebuild_index(pages)
     return len(pages)
