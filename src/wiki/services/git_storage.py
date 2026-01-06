@@ -290,6 +290,53 @@ class GitStorageService:
             return True
         return False
 
+    def move_page(self, old_path: str, new_path: str, move_attachments: bool = True) -> bool:
+        """Move/rename a page.
+
+        Args:
+            old_path: Current page path
+            new_path: New page path
+            move_attachments: Whether to move attachments directory (default: True)
+
+        Returns:
+            True if page was moved, False otherwise
+
+        Raises:
+            InvalidPathError: If paths are invalid
+            ValueError: If new path already exists or is same as old path
+        """
+        old_path = validate_path(old_path)
+        new_path = validate_path(new_path)
+
+        if old_path == new_path:
+            raise ValueError("New path must be different from old path")
+
+        old_file = self.pages_path / f"{old_path}.md"
+        new_file = self.pages_path / f"{new_path}.md"
+
+        if not old_file.exists():
+            return False
+
+        if new_file.exists():
+            raise ValueError(f"Page already exists at: {new_path}")
+
+        # Create parent directory if needed
+        new_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Move page file
+        old_file.rename(new_file)
+
+        # Move attachments if requested
+        if move_attachments:
+            old_attachments = self.attachments_path / old_path
+            new_attachments = self.attachments_path / new_path
+
+            if old_attachments.exists():
+                new_attachments.parent.mkdir(parents=True, exist_ok=True)
+                old_attachments.rename(new_attachments)
+
+        return True
+
     def list_pages(self, limit: int | None = None, offset: int = 0) -> list[str]:
         """List all page paths in the repository.
 

@@ -115,6 +115,41 @@ Implementation: `src/wiki/services/git_storage.py` (SYSTEM_MANAGED_FIELDS consta
 
 ## Page Features
 
+### CRUD Operations
+
+All wiki pages have CRUD buttons in the header for page management:
+
+**Create New Pages:**
+- Blue "New Page" button opens modal dialog
+- Enter page path (e.g., "guides/setup" or "teams/engineering")
+- Client-side validation prevents invalid paths (.., absolute paths)
+- Redirects to edit page for new content
+
+**Delete Pages:**
+- Red "Delete" button with confirmation dialog
+- Removes page file from Git repository
+- Removes from search index
+- Invalidates sidebar and widget caches
+- Leaves attachments orphaned (safer for recovery)
+- Commits with message "Delete: {page_path}"
+
+**Move/Rename Pages:**
+- Gray "Move" button opens modal dialog
+- Shows current path and accepts new path input
+- Moves page file and attachments directory automatically
+- Updates search index (removes old, adds new)
+- Invalidates caches
+- Commits with message "Move: {old} -> {new}"
+- Note: Wikilinks in other pages are NOT automatically updated
+
+**Button Order:** [New Page] [Move] [Edit] [Delete]
+
+**Implementation:**
+- Views: `delete()` and `move()` in `src/wiki/views.py`
+- Service methods: `delete_page()`, `move_page()` in `src/wiki/services/git_storage.py`
+- URL patterns: `/wiki/<path>/delete/` and `/wiki/<path>/move/`
+- Template: `src/core/templates/wiki/page.html` (Alpine.js modals)
+
 ### GitHub Source Link
 
 Each wiki page displays a "View source" link in the footer that links to the original markdown file on GitHub.

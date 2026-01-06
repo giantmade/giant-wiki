@@ -187,6 +187,111 @@ def edit(request, page_path: str):
     )
 
 
+def delete(request, page_path: str):
+    """Delete a wiki page."""
+    from django.http import HttpResponseNotAllowed
+
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    storage = get_storage_service()
+
+    try:
+        wiki_page = storage.get_page(page_path)
+    except InvalidPathError:
+        return HttpResponseNotFound("Invalid page path")
+
+    if not wiki_page:
+        messages.error(request, "Page not found")
+        return redirect(reverse("page", kwargs={"page_path": "index"}))
+
+    # Delete page file
+    deleted = storage.delete_page(page_path)
+
+    if deleted:
+        # Remove from search index
+        search_service = get_search_service()
+        search_service.remove_page(page_path)
+
+        # Invalidate caches
+        invalidate_sidebar_cache()
+        from .services.widgets import invalidate_widget_cache
+
+        invalidate_widget_cache()
+
+        # Commit to Git
+        try:
+            storage.commit_and_push(f"Delete: {page_path}")
+        except Exception as e:
+            logger.warning("Git commit failed for delete %s: %s", page_path, e)
+
+        messages.success(request, f"Page '{wiki_page.title}' deleted successfully")
+    else:
+        messages.error(request, "Failed to delete page")
+
+    return redirect(reverse("page", kwargs={"page_path": "index"}))
+
+
+def move(request, page_path: str):
+    """Move/rename a wiki page."""
+    from django.http import HttpResponseNotAllowed
+
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    storage = get_storage_service()
+
+    try:
+        wiki_page = storage.get_page(page_path)
+    except InvalidPathError:
+        return HttpResponseNotFound("Invalid page path")
+
+    if not wiki_page:
+        messages.error(request, "Page not found")
+        return redirect(reverse("page", kwargs={"page_path": "index"}))
+
+    new_path = request.POST.get("new_path", "").strip()
+
+    if not new_path:
+        messages.error(request, "New path cannot be empty")
+        return redirect(reverse("page", kwargs={"page_path": page_path}))
+
+    try:
+        # Move page
+        moved = storage.move_page(page_path, new_path, move_attachments=True)
+
+        if moved:
+            # Update search index
+            search_service = get_search_service()
+            search_service.remove_page(page_path)
+            new_page = storage.get_page(new_path)
+            if new_page:
+                search_service.add_page(new_path, new_page.content)
+
+            # Invalidate caches
+            invalidate_sidebar_cache()
+            from .services.widgets import invalidate_widget_cache
+
+            invalidate_widget_cache()
+
+            # Commit to Git
+            try:
+                storage.commit_and_push(f"Move: {page_path} -> {new_path}")
+            except Exception as e:
+                logger.warning("Git commit failed for move: %s", e)
+
+            messages.success(request, f"Page moved to '{new_path}'")
+            return redirect(reverse("page", kwargs={"page_path": new_path}))
+        else:
+            messages.error(request, "Failed to move page")
+    except InvalidPathError as e:
+        messages.error(request, f"Invalid path: {e}")
+    except ValueError as e:
+        messages.error(request, str(e))
+
+    return redirect(reverse("page", kwargs={"page_path": page_path}))
+
+
 def search(request):
     """Search wiki pages."""
     query = request.GET.get("q", "").strip()
