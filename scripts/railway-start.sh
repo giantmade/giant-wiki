@@ -1,8 +1,13 @@
 #!/bin/bash
 set -e
 
+echo "=== Railway Start Script ==="
+echo "Current directory: $(pwd)"
+echo "PORT: ${PORT:-8000}"
+
 # Setup SSH key if provided
 if [ -n "$GIT_SSH_KEY" ]; then
+    echo "Setting up SSH key..."
     mkdir -p ~/.ssh
     echo "$GIT_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
     chmod 600 ~/.ssh/id_rsa
@@ -24,11 +29,20 @@ if [ -n "$WIKI_REPO_URL" ]; then
     fi
 fi
 
-# Change to src directory
-cd /app/src
+# Find src directory
+if [ -d "/app/src" ]; then
+    cd /app/src
+elif [ -d "src" ]; then
+    cd src
+else
+    echo "ERROR: Cannot find src directory!"
+    exit 1
+fi
+
+echo "Working directory: $(pwd)"
 
 # Start Gunicorn
-exec gunicorn core.wsgi \
+exec gunicorn core.wsgi:application \
     --bind 0.0.0.0:${PORT:-8000} \
     --workers 4 \
     --worker-class sync \
@@ -36,4 +50,6 @@ exec gunicorn core.wsgi \
     --max-requests 1000 \
     --max-requests-jitter 50 \
     --access-logfile - \
-    --error-logfile -
+    --error-logfile - \
+    --capture-output \
+    --log-level info
