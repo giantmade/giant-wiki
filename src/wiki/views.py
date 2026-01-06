@@ -202,13 +202,41 @@ def search(request):
 
 def history(request):
     """Show recent changes across all pages."""
+    from collections import defaultdict
+
+    from wiki.templatetags.history_filters import time_group_label
+
     storage = get_storage_service()
     changes = storage.get_recent_changes(limit=50)
+
+    # Group changes by time period
+    groups = defaultdict(list)
+    for change in changes:
+        group_label = time_group_label(change["date"])
+        groups[group_label].append(change)
+
+    # Convert to ordered list preserving time order
+    # Order: Today, Yesterday, This Week, Last Week, then chronological months
+    time_order = ["Today", "Yesterday", "This Week", "Last Week"]
+    grouped_changes = []
+
+    for label in time_order:
+        if label in groups:
+            grouped_changes.append({"label": label, "commits": groups[label]})
+
+    # Add remaining month groups in chronological order (newest first)
+    month_groups = sorted(
+        [(label, commits) for label, commits in groups.items() if label not in time_order],
+        key=lambda x: x[1][0]["date"],  # Sort by first commit's date
+        reverse=True,
+    )
+    for label, commits in month_groups:
+        grouped_changes.append({"label": label, "commits": commits})
 
     return render(
         request,
         "wiki/history.html",
         {
-            "changes": changes,
+            "grouped_changes": grouped_changes,
         },
     )
