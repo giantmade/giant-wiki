@@ -220,11 +220,29 @@ class GitStorageService:
             metadata=dict(post.metadata) if post.metadata else {},
         )
 
-    def save_page(self, path: str, content: str, metadata: dict | None = None) -> WikiPage:
-        """Write a page to the local repository."""
+    def save_page(self, path: str, content: str, metadata: dict | None = None) -> tuple[WikiPage, bool]:
+        """Write a page to the local repository.
+
+        Args:
+            path: Page path
+            content: Page content
+            metadata: Optional frontmatter metadata
+
+        Returns:
+            Tuple of (WikiPage, content_changed)
+            - WikiPage: The saved page object
+            - content_changed: True if content/metadata changed, False otherwise
+        """
         path = validate_path(path)
         file_path = self.pages_path / f"{path}.md"
         file_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Check if content changed (for commit optimization)
+        content_changed = True
+        if file_path.exists():
+            existing = self.get_page(path)
+            if existing:
+                content_changed = existing.content != content or existing.metadata != (metadata or {})
 
         # Combine content and metadata using frontmatter
         if metadata:
@@ -235,12 +253,14 @@ class GitStorageService:
 
         file_path.write_text(raw_content, encoding="utf-8")
 
-        return WikiPage(
+        wiki_page = WikiPage(
             path=path,
             content=content,
             last_modified=datetime.now(),
             metadata=metadata or {},
         )
+
+        return wiki_page, content_changed
 
     def delete_page(self, path: str) -> bool:
         """Delete a page from the local repository."""

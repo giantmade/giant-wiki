@@ -14,7 +14,6 @@ from core.models import dispatch_task
 
 from .services.git_storage import InvalidPathError, WikiPage, get_storage_service
 from .services.search import get_search_service
-from .services.sidebar import invalidate_sidebar_cache
 
 logger = logging.getLogger(__name__)
 
@@ -137,30 +136,20 @@ def edit(request, page_path: str):
                     metadata[key] = original_value
 
         try:
-            storage.save_page(page_path, content, metadata if metadata else None)
-
-            # Update search index
-            search_service = get_search_service()
-            search_service.add_page(page_path, content)
-
-            # Only invalidate sidebar cache if new page or title changed
-            should_invalidate_cache = is_new_page
-            if not should_invalidate_cache and metadata:
-                # Check if title changed
-                if "title" in metadata and metadata["title"] != original_metadata.get("title"):
-                    should_invalidate_cache = True
-
-            if should_invalidate_cache:
-                invalidate_sidebar_cache()
-
-            # Queue background sync to Git remote
+            # Dispatch async task to save page, update search, and commit
             dispatch_task(
-                "wiki.sync_to_remote",
-                kwargs={"message": f"Update: {page_path}"},
-                initial_logs=f"Syncing changes for {page_path}",
+                "wiki.save_and_sync",
+                kwargs={
+                    "page_path": page_path,
+                    "content": content,
+                    "metadata": metadata if metadata else None,
+                    "original_metadata": original_metadata,
+                    "is_new_page": is_new_page,
+                },
+                initial_logs=f"Saving page: {page_path}",
             )
 
-            messages.success(request, "Page saved successfully.")
+            messages.success(request, "Page is being saved...")
             return redirect(reverse("page", kwargs={"page_path": page_path}))
 
         except OSError as e:

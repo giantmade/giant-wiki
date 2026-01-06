@@ -1,5 +1,7 @@
 """Celery tasks for wiki operations."""
 
+import logging
+
 from celery import shared_task
 
 from core.models import Task
@@ -8,10 +10,103 @@ from .services.git_storage import get_storage_service
 from .services.search import get_search_service
 from .services.sidebar import invalidate_sidebar_cache
 
+logger = logging.getLogger(__name__)
+
+
+@shared_task(bind=True, name="wiki.save_and_sync")
+def save_and_sync(
+    self,
+    task_id,
+    page_path: str,
+    content: str,
+    metadata: dict | None = None,
+    original_metadata: dict | None = None,
+    is_new_page: bool = False,
+) -> dict:
+    """Save page content and sync to Git remote.
+
+    This task performs the complete save operation:
+    1. Write markdown file to repository
+    2. Update search index
+    3. Commit and push to remote
+    4. Invalidate caches if needed
+
+    Args:
+        task_id: Task model ID for tracking
+        page_path: Wiki page path
+        content: Page markdown content
+        metadata: Page frontmatter metadata
+        original_metadata: Original metadata (for detecting title changes)
+        is_new_page: Whether this is a new page creation
+
+    Returns:
+        dict with keys: saved, committed, search_updated, cache_invalidated
+    """
+    task = Task.objects.get(id=task_id)
+    task.start()
+
+    result = {
+        "saved": False,
+        "committed": False,
+        "search_updated": False,
+        "cache_invalidated": False,
+    }
+
+    try:
+        # 1. Save page to filesystem
+        storage = get_storage_service()
+        wiki_page, content_changed = storage.save_page(page_path, content, metadata)
+        result["saved"] = True
+        task.logs += f"\nSaved page: {page_path}"
+
+        # 2. Update search index
+        search_service = get_search_service()
+        search_service.add_page(page_path, content)
+        result["search_updated"] = True
+        task.logs += "\nUpdated search index"
+
+        # 3. Invalidate sidebar cache if needed
+        should_invalidate_cache = is_new_page
+        if not should_invalidate_cache and metadata and original_metadata:
+            # Check if title changed
+            if metadata.get("title") != original_metadata.get("title"):
+                should_invalidate_cache = True
+
+        if should_invalidate_cache:
+            invalidate_sidebar_cache()
+            result["cache_invalidated"] = True
+            task.logs += "\nInvalidated sidebar cache"
+
+        # 4. Commit and push to remote (only if content changed)
+        if content_changed:
+            commit_message = f"Update: {page_path}"
+            committed = storage.commit_and_push(commit_message)
+            result["committed"] = committed
+
+            if committed:
+                task.logs += f"\nCommitted and pushed: {commit_message}"
+            else:
+                task.logs += "\nNo changes to commit (git detected no diff)"
+        else:
+            task.logs += "\nSkipped commit (content unchanged)"
+
+        task.complete(success=True, logs=f"\n\nSuccessfully saved {page_path}")
+        return result
+
+    except Exception as e:
+        error_msg = f"\nFailed to save page: {e}"
+        task.complete(success=False, logs=error_msg)
+        logger.error("save_and_sync failed for %s: %s", page_path, e, exc_info=True)
+        raise
+
 
 @shared_task(bind=True, name="wiki.sync_to_remote")
 def sync_to_remote(self, task_id, message: str = "Update wiki content"):
     """Commit and push changes to remote repository.
+
+    DEPRECATED: This task is kept for backward compatibility and manual sync.
+    New page edits should use wiki.save_and_sync which handles both
+    write and commit operations atomically.
 
     Args:
         task_id: Task model ID for tracking
