@@ -12,6 +12,7 @@ urlpatterns = [
     # Health check for Railway
     path("health/", core_views.health, name="health"),
     # Tasks
+    path("tasks/", core_views.tasks_list, name="tasks_list"),
     path("tasks/<str:task_id>/", core_views.task_detail, name="task_detail"),
     path("tasks/<str:task_id>/status/", core_views.task_status_json, name="task_status_json"),
     path("tasks/<str:task_id>/cancel/", core_views.task_cancel, name="task_cancel"),

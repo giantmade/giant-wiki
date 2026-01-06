@@ -117,6 +117,33 @@ The sidebar uses a two-tier caching strategy in Redis for fast access:
 
 Implementation: `src/wiki/services/sidebar.py` (two cache keys) and `src/wiki/tasks.py` (cache warming).
 
+## Task Monitoring
+
+The wiki includes a web UI for monitoring Celery background tasks at `/tasks/`.
+
+### URL Structure
+
+| URL | Description |
+|-----|-------------|
+| `/tasks/` | List all tasks (paginated, 30 per page) |
+| `/tasks/<task_id>/` | Task detail with logs and audit trail |
+| `/tasks/<task_id>/status/` | JSON endpoint for status polling |
+| `/tasks/<task_id>/cancel/` | Cancel a running task (POST) |
+
+### Features
+
+- **Tasks List:** Paginated table showing all tasks with status, type, name, creation time, and duration
+- **Status Badges:** Color-coded badges (queued, in_progress, success, completed_with_errors, failed, cancelled)
+- **Detail View:** Real-time task monitoring with auto-refresh, logs, progress tracking, and audit trail
+- **Navigation:** Accessible via sidebar footer link (History | Tasks)
+
+### Implementation
+
+- Views: `src/core/views.py` (tasks_list, task_detail, task_status_json, task_cancel)
+- Templates: `src/core/templates/core/tasks_list.html`, `src/core/templates/core/task_detail.html`
+- Models: Task and TaskAuditTrail in `src/core/models.py`
+- Task dispatcher: `dispatch_task()` function for launching Celery tasks with tracking
+
 ## Deployment
 
 Deployed to Railway with Tailscale forwarder for private access:

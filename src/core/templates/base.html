@@ -194,8 +194,10 @@
 
             <!-- Footer links -->
             <div class="absolute bottom-0 left-0 right-0 px-4 py-3 border-t border-gray-800 bg-gray-900">
-                <div class="text-xs text-gray-500">
+                <div class="text-xs text-gray-500 flex gap-3">
                     <a href="{% url 'history' %}" class="hover:text-gray-300">History</a>
+                    <span class="text-gray-700">|</span>
+                    <a href="{% url 'tasks_list' %}" class="hover:text-gray-300">Tasks</a>
                 </div>
             </div>
         </nav>

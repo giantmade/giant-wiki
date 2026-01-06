@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Tasks{% endblock %}
+
+{% block body %}
+<!-- Header -->
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-light text-gray-900">Tasks</h1>
+        <p class="text-sm text-gray-500 mt-1">
+            {{ page_obj.paginator.count }} task{{ page_obj.paginator.count|pluralize }}
+            {% if page_obj.paginator.num_pages > 1 %}
+                &middot; Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+{% if tasks %}
+<!-- Table -->
+<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                <tr>
+                    <th class="px-6 py-3">Status</th>
+                    <th class="px-6 py-3">Task Type</th>
+                    <th class="px-6 py-3">Name</th>
+                    <th class="px-6 py-3">Created</th>
+                    <th class="px-6 py-3">Duration</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for task in tasks %}
+                <tr class="hover:bg-gray-50 cursor-pointer" onclick="window.location='{% url 'task_detail' task.id %}'">
+                    <td class="px-6 py-4">
+                        {% include "partials/_status_badge.html" with status=task.status %}
+                    </td>
+                    <td class="px-6 py-4">
+                        <code class="text-xs bg-gray-100 px-2 py-1 rounded">{{ task.task_type|default:"Unknown" }}</code>
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="text-gray-900">{{ task.name }}</span>
+                        <span class="text-gray-400 text-xs ml-1">({{ task.id }})</span>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">{{ task.created_at|date:"M j, H:i" }}</td>
+                    <td class="px-6 py-4 text-gray-600">
+                        {% if task.duration %}{{ task.duration }}{% else %}-{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Pagination -->
+{% if page_obj.paginator.num_pages > 1 %}
+<nav class="flex items-center justify-center mt-6" aria-label="Pagination">
+    <div class="flex items-center space-x-1">
+        {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+            Previous
+        </a>
+        {% else %}
+        <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-not-allowed">
+            Previous
+        </span>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+            <span class="px-3 py-2 text-sm font-medium text-white bg-green-600 border border-green-600 rounded-lg">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?page={{ num }}" class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+            Next
+        </a>
+        {% else %}
+        <span class="px-3 py-2 text-sm font-medium text-gray-400 bg-gray-100 border border-gray-200 rounded-lg cursor-not-allowed">
+            Next
+        </span>
+        {% endif %}
+    </div>
+</nav>
+{% endif %}
+
+{% else %}
+<!-- Empty State -->
+<div class="bg-white rounded-lg border border-gray-200 p-8 text-center">
+    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+    </svg>
+    <h3 class="mt-4 text-sm font-medium text-gray-900">No tasks</h3>
+    <p class="mt-1 text-sm text-gray-500">Tasks will appear here when they are created.</p>
+</div>
+{% endif %}
+{% endblock body %}
