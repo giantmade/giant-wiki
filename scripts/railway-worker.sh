@@ -8,9 +8,9 @@ echo "Current directory: $(pwd)"
 if [ -n "$GIT_SSH_KEY" ]; then
     echo "Setting up SSH key..."
     mkdir -p ~/.ssh
-    echo "$GIT_SSH_KEY" | base64 -d > ~/.ssh/id_rsa
-    chmod 600 ~/.ssh/id_rsa
-    ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
+    echo "$GIT_SSH_KEY" | base64 -d > ~/.ssh/id_rsa || echo "Warning: Failed to decode SSH key"
+    chmod 600 ~/.ssh/id_rsa || true
+    ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null || echo "Warning: Failed to scan SSH keys"
 fi
 
 # Clone or pull wiki content repo (worker needs it for tasks)
