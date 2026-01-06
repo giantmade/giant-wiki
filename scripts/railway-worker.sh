@@ -4,9 +4,9 @@ echo "=== Railway Worker Script ==="
 echo "Current directory: $(pwd)"
 
 # Configure Git identity for commits
-git config --global user.email "wiki@giantmade.com"
-git config --global user.name "Giant Wiki"
-echo "Configured Git identity"
+git config --global user.email "${GIT_AUTHOR_EMAIL:-wiki@giantmade.com}"
+git config --global user.name "${GIT_AUTHOR_NAME:-Giant Wiki}"
+echo "Configured Git identity: ${GIT_AUTHOR_NAME:-Giant Wiki} <${GIT_AUTHOR_EMAIL:-wiki@giantmade.com}>"
 
 # Setup SSH key if provided
 if [ -n "$GIT_SSH_KEY" ]; then
