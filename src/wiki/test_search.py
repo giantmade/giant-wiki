@@ -581,22 +581,20 @@ class TestViews:
             WikiPage(path="newpage", content="New content"),
             True,
         )
+        mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service") as mock_search:
             with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
-                with patch("wiki.views.dispatch_task") as mock_dispatch:
-                    response = client.post("/wiki/newpage/edit/", {"content": "New content"})
+                response = client.post("/wiki/newpage/edit/", {"content": "New content"})
 
         assert response.status_code == 302
         assert "/wiki/newpage/" in response.url
 
-        # Verify file was saved locally
+        # Verify synchronous operations
         mock_storage.return_value.save_page.assert_called_once()
-        mock_search.return_value.add_page.assert_called_once()
+        mock_search.return_value.add_page.assert_called_once_with("newpage", "New content")
         mock_invalidate.assert_called_once()  # New page
-
-        # Verify task dispatched
-        mock_dispatch.assert_called_once()
+        mock_storage.return_value.commit_and_push.assert_called_once_with("Update: newpage")
 
     def test_edit_view_post_existing_page_no_title_change(self, client, mock_storage):
         """Edit view POST for existing page without title change."""
@@ -609,21 +607,22 @@ class TestViews:
         )
         mock_storage.return_value.get_page.return_value = existing_page
         mock_storage.return_value.save_page.return_value = (existing_page, True)
+        mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service"):
             with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
-                with patch("wiki.views.dispatch_task"):
-                    response = client.post(
-                        "/wiki/testpage/edit/",
-                        {
-                            "content": "New content",
-                            "meta_title": "Test",  # Same title
-                            "meta_author": "user2",  # Different author
-                        },
-                    )
+                response = client.post(
+                    "/wiki/testpage/edit/",
+                    {
+                        "content": "New content",
+                        "meta_title": "Test",  # Same title
+                        "meta_author": "user2",  # Different author
+                    },
+                )
 
         assert response.status_code == 302
         mock_storage.return_value.save_page.assert_called_once()
+        mock_storage.return_value.commit_and_push.assert_called_once()
         mock_invalidate.assert_not_called()  # Title unchanged
 
     def test_edit_view_post_title_changed_invalidates_cache(self, client, mock_storage):
@@ -633,17 +632,18 @@ class TestViews:
         existing_page = WikiPage(path="testpage", content="Content", metadata={"title": "Old Title"})
         mock_storage.return_value.get_page.return_value = existing_page
         mock_storage.return_value.save_page.return_value = (existing_page, True)
+        mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service"):
             with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
-                with patch("wiki.views.dispatch_task"):
-                    response = client.post(
-                        "/wiki/testpage/edit/",
-                        {"content": "Content", "meta_title": "New Title"},
-                    )
+                response = client.post(
+                    "/wiki/testpage/edit/",
+                    {"content": "Content", "meta_title": "New Title"},
+                )
 
         assert response.status_code == 302
         mock_storage.return_value.save_page.assert_called_once()
+        mock_storage.return_value.commit_and_push.assert_called_once()
         mock_invalidate.assert_called_once()  # Title changed
 
     def test_edit_view_post_checkbox_unchecked(self, client, mock_storage):
@@ -653,17 +653,17 @@ class TestViews:
         existing_page = WikiPage(path="testpage", content="Content", metadata={"published": True})
         mock_storage.return_value.get_page.return_value = existing_page
         mock_storage.return_value.save_page.return_value = (existing_page, True)
+        mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service"):
             with patch("wiki.views.invalidate_sidebar_cache"):
-                with patch("wiki.views.dispatch_task"):
-                    _response = client.post(
-                        "/wiki/testpage/edit/",
-                        {
-                            "content": "Content"
-                            # Note: meta_published not in POST = checkbox unchecked
-                        },
-                    )
+                _response = client.post(
+                    "/wiki/testpage/edit/",
+                    {
+                        "content": "Content"
+                        # Note: meta_published not in POST = checkbox unchecked
+                    },
+                )
 
         # Verify save_page was called with published=False
         call_args = mock_storage.return_value.save_page.call_args
@@ -683,18 +683,18 @@ class TestViews:
         )
         mock_storage.return_value.get_page.return_value = existing_page
         mock_storage.return_value.save_page.return_value = (existing_page, True)
+        mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service"):
             with patch("wiki.views.invalidate_sidebar_cache"):
-                with patch("wiki.views.dispatch_task"):
-                    _response = client.post(
-                        "/wiki/testpage/edit/",
-                        {
-                            "content": "New content",
-                            "meta_title": "Test",
-                            # system_field not in POST
-                        },
-                    )
+                _response = client.post(
+                    "/wiki/testpage/edit/",
+                    {
+                        "content": "New content",
+                        "meta_title": "Test",
+                        # system_field not in POST
+                    },
+                )
 
         # Verify system_field was preserved
         call_args = mock_storage.return_value.save_page.call_args

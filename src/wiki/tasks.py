@@ -49,6 +49,10 @@ def save_and_sync(
 ) -> dict:
     """Save page content and sync to Git remote.
 
+    NOTE: This task is currently UNUSED. Page saves are handled synchronously
+    in the web view for simplicity. This task is kept for potential future use
+    or for manual background operations.
+
     This task performs the complete save operation:
     1. Write markdown file to repository
     2. Update search index

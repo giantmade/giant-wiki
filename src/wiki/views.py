@@ -10,35 +10,11 @@ from django.urls import reverse
 from markdown import markdown
 from markdown.extensions.wikilinks import WikiLinkExtension
 
-from core.models import dispatch_task
-
 from .services.git_storage import InvalidPathError, WikiPage, get_storage_service
 from .services.search import get_search_service
 from .services.sidebar import invalidate_sidebar_cache
 
 logger = logging.getLogger(__name__)
-
-
-def serialize_metadata(metadata: dict | None) -> dict | None:
-    """Convert metadata to JSON-serializable format for Celery tasks.
-
-    Converts datetime objects to ISO format strings.
-    """
-    if not metadata:
-        return None
-
-    from datetime import date, datetime
-
-    serialized = {}
-    for key, value in metadata.items():
-        if isinstance(value, datetime):
-            serialized[key] = value.isoformat()
-        elif isinstance(value, date):
-            serialized[key] = value.isoformat()
-        else:
-            serialized[key] = value
-
-    return serialized
 
 
 def render_markdown(content: str) -> str:
@@ -159,7 +135,7 @@ def edit(request, page_path: str):
                     metadata[key] = original_value
 
         try:
-            # Save file locally in web container (for immediate viewing)
+            # Save file to repository
             storage.save_page(page_path, content, metadata if metadata else None)
 
             # Update search index
@@ -175,19 +151,12 @@ def edit(request, page_path: str):
             if should_invalidate_cache:
                 invalidate_sidebar_cache()
 
-            # Dispatch async task to save (again) in worker and commit to Git
-            # Worker writes the file in its own filesystem, then commits
-            dispatch_task(
-                "wiki.save_and_sync",
-                kwargs={
-                    "page_path": page_path,
-                    "content": content,
-                    "metadata": serialize_metadata(metadata),
-                    "original_metadata": serialize_metadata(original_metadata),
-                    "is_new_page": is_new_page,
-                },
-                initial_logs=f"Committing changes for: {page_path}",
-            )
+            # Commit and push to Git (synchronous)
+            try:
+                storage.commit_and_push(f"Update: {page_path}")
+            except Exception as e:
+                # Log git errors but don't fail the save
+                logger.warning("Git commit failed for %s: %s", page_path, e)
 
             messages.success(request, "Page saved successfully.")
             return redirect(reverse("page", kwargs={"page_path": page_path}))
