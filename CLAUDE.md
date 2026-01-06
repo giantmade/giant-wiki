@@ -125,6 +125,32 @@ Each wiki page displays a "View source" link in the footer that links to the ori
 - **Location:** Footer below main content card
 - **Implementation:** `get_github_source_url()` in `src/wiki/services/git_storage.py`
 
+### Index Page Widgets
+
+The index page (`/wiki/index/`) displays two dashboard widgets below the main content:
+
+**Recently Updated Widget:**
+- Shows 8 most recently changed pages
+- Clock icon with green links
+- Sorted by `last_updated` frontmatter or file modification time
+
+**Needs Review Widget:**
+- Shows pages approaching stale status (270-365 days old)
+- Warning triangle icon with amber styling
+- Helps identify content that may need updating
+
+**Performance:**
+- Widgets load only on index page (zero impact on other pages)
+- Redis caching with 30-minute TTL
+- Caches pre-warmed on startup and after Git sync
+- Invalidated on page edits
+
+**Implementation:**
+- Data service: `src/wiki/services/widgets.py`
+- Batch data fetching: `get_pages_with_dates()` in `src/wiki/services/git_storage.py`
+- Template: `src/core/templates/wiki/page.html` (conditional rendering)
+- Cache warming: `src/wiki/tasks.py` (warm_sidebar_cache task)
+
 ## Environment Variables
 
 | Variable | Description |

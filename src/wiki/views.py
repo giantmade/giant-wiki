@@ -84,15 +84,20 @@ def page(request, page_path: str = "index"):
     markdown_time = time.time() - markdown_start
     logger.info(f"render_markdown took {markdown_time:.3f}s")
 
+    context = {
+        "page": wiki_page,
+        "page_html": page_html,
+    }
+
+    # Add widget data only for index page
+    if page_path == "index":
+        from .services.widgets import get_recently_stale, get_recently_updated
+
+        context["recently_updated"] = get_recently_updated(limit=8)
+        context["recently_stale"] = get_recently_stale(limit=8)
+
     render_start = time.time()
-    response = render(
-        request,
-        "wiki/page.html",
-        {
-            "page": wiki_page,
-            "page_html": page_html,
-        },
-    )
+    response = render(request, "wiki/page.html", context)
     render_time = time.time() - render_start
     total_time = time.time() - start_time
     logger.info(f"template render took {render_time:.3f}s, total view time {total_time:.3f}s")
@@ -150,6 +155,10 @@ def edit(request, page_path: str):
 
             if should_invalidate_cache:
                 invalidate_sidebar_cache()
+                # Invalidate widget cache when page metadata changes
+                from .services.widgets import invalidate_widget_cache
+
+                invalidate_widget_cache()
 
             # Commit and push to Git (synchronous)
             try:

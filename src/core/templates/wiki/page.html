@@ -40,6 +40,59 @@
             </article>
         </div>
 
+        <!-- Index page widgets -->
+        {% if page.path == "index" and recently_updated %}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <!-- Recently Updated Widget -->
+            <div class="bg-white rounded-lg border border-gray-200 p-4">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Recently Updated
+                </h3>
+                {% if recently_updated %}
+                <ul class="space-y-2">
+                    {% for item in recently_updated %}
+                    <li class="flex items-start justify-between gap-2">
+                        <a href="{% url 'page' page_path=item.path %}" class="text-green-600 hover:text-green-700 hover:underline flex-1 truncate">
+                            {{ item.title }}
+                        </a>
+                        <span class="text-xs text-gray-500 whitespace-nowrap">{{ item.date|staleness_label }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-gray-500">No recent updates</p>
+                {% endif %}
+            </div>
+
+            <!-- Needs Review Widget -->
+            <div class="bg-white rounded-lg border border-gray-200 p-4">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Needs Review
+                </h3>
+                {% if recently_stale %}
+                <ul class="space-y-2">
+                    {% for item in recently_stale %}
+                    <li class="flex items-start justify-between gap-2">
+                        <a href="{% url 'page' page_path=item.path %}" class="text-amber-600 hover:text-amber-700 hover:underline flex-1 truncate">
+                            {{ item.title }}
+                        </a>
+                        <span class="text-xs text-amber-600 whitespace-nowrap">{{ item.date|staleness_label }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p class="text-sm text-gray-500">No pages need review</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
         <!-- View source footer -->
         {% with github_url=page.path|github_source_url %}
         {% if github_url %}

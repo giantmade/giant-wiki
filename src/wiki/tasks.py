@@ -307,4 +307,12 @@ def warm_sidebar_cache():
     elapsed = time.time() - start_time
     logger.info(f"Sidebar cache warmed: {len(pages)} pages, {len(structure)} categories in {elapsed:.3f}s")
 
+    # Warm widget caches
+    from .services.widgets import get_recently_stale, get_recently_updated
+
+    logger.info("Warming widget caches...")
+    get_recently_updated(limit=8)  # Populates cache
+    get_recently_stale(limit=8)  # Populates cache
+    logger.info("Widget caches warmed")
+
     return len(pages)

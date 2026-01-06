@@ -357,6 +357,62 @@ class GitStorageService:
 
         return titles
 
+    def get_pages_with_dates(self) -> list[tuple[str, str, datetime | None]]:
+        """Get all pages with their paths, titles, and content dates.
+
+        Returns:
+            List of (path, title, content_date) tuples
+
+        Performance: Reads only frontmatter, not full content.
+        """
+        from wiki.services.sidebar import humanize_slug
+
+        results = []
+        if not self.pages_path.exists():
+            return results
+
+        for file_path in self.pages_path.rglob("*.md"):
+            relative = file_path.relative_to(self.pages_path)
+            path = str(relative.with_suffix(""))
+
+            try:
+                raw_content = file_path.read_text(encoding="utf-8")
+
+                # Parse frontmatter
+                post = frontmatter.loads(raw_content) if raw_content.startswith("---") else None
+
+                # Extract title (from frontmatter or humanized path)
+                title = post.metadata.get("title") if post else None
+                if not title:
+                    title = humanize_slug(path.split("/")[-1])
+
+                # Extract content_date (same logic as WikiPage.content_date property)
+                content_date = None
+                if post:
+                    normalized = {k.lower().replace("_", ""): v for k, v in post.metadata.items()}
+                    date_fields = ("lastupdated", "updated", "date", "modified", "lastmodified")
+                    for field_name in date_fields:
+                        if field_name in normalized:
+                            value = normalized[field_name]
+                            if isinstance(value, datetime):
+                                content_date = value
+                                break
+                            if isinstance(value, date):
+                                content_date = datetime.combine(value, datetime.min.time())
+                                break
+
+                # Fallback to file mtime if no frontmatter date
+                if not content_date:
+                    content_date = datetime.fromtimestamp(file_path.stat().st_mtime)
+
+                results.append((path, title, content_date))
+
+            except Exception:
+                # Skip pages that can't be read
+                continue
+
+        return results
+
     def get_attachment_path(self, page_path: str, filename: str) -> Path:
         """Get the filesystem path for an attachment."""
         page_path = validate_path(page_path)
