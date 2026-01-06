@@ -21,14 +21,13 @@ def health(request):
 def task_detail(request, task_id):
     """Display task details and status."""
     task = get_object_or_404(Task, id=task_id)
-    audit_trail = task.audit_trail.all()
 
     return render(
         request,
         "core/task_detail.html",
         {
             "task": task,
-            "audit_trail": audit_trail,
+            "can_cancel": task.can_cancel,
         },
     )
 
@@ -58,6 +57,27 @@ def task_status_json(request, task_id):
                 "completed_items": task.completed_items,
                 "progress_percent": task.progress_percent,
             },
+        }
+    )
+
+
+def task_audit_json(request, task_id):
+    """Return task audit trail as JSON."""
+    task = get_object_or_404(Task, id=task_id)
+    audit_trail = task.audit_trail.all()
+
+    return JsonResponse(
+        {
+            "success": True,
+            "audit_trail": [
+                {
+                    "id": entry.id,
+                    "event": entry.event,
+                    "event_display": entry.get_event_display(),
+                    "created_at": entry.created_at.isoformat(),
+                }
+                for entry in audit_trail
+            ],
         }
     )
 
