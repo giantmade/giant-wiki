@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 echo "=== Railway Start Script ==="
 echo "Current directory: $(pwd)"
