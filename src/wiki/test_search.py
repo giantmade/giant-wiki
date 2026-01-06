@@ -230,12 +230,14 @@ class TestGitStorageService:
         assert page.metadata["revision_count"] == 5
 
     def test_save_page_without_metadata(self, storage):
-        """Pages without metadata are saved as plain markdown."""
+        """Pages without user metadata get system-managed fields only."""
         storage.save_page("test", "# Just Content")
 
         page = storage.get_page("test")
         assert page.content == "# Just Content"
-        assert page.metadata == {}
+        # Should have only system-managed fields (last_updated)
+        assert "last_updated" in page.metadata
+        assert len(page.metadata) == 1
 
     def test_editable_metadata_excludes_title(self, storage):
         """editable_metadata property excludes title."""

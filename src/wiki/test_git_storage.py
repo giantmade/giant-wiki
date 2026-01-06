@@ -2,6 +2,7 @@
 
 import subprocess
 import tempfile
+import time
 from datetime import date, datetime
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -401,6 +402,137 @@ class TestGitStorageBasicOperations:
     def test_get_page_titles_empty_repo(self, temp_repo):
         """get_page_titles returns empty dict for empty repo."""
         assert temp_repo.get_page_titles() == {}
+
+    def test_save_page_adds_last_updated_to_new_page(self, temp_repo):
+        """New pages should automatically get last_updated timestamp."""
+        wiki_page, content_changed = temp_repo.save_page("test", "# Content", metadata={"title": "Test Page"})
+
+        assert content_changed is True
+        assert "last_updated" in wiki_page.metadata
+
+        # Verify it's a valid datetime string matching format
+        timestamp_str = wiki_page.metadata["last_updated"]
+        # Should match format: YYYY-MM-DD HH:MM:SS.ffffff
+        parsed = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S.%f")
+        assert parsed is not None
+
+        # Verify it was written to disk
+        reloaded = temp_repo.get_page("test")
+        assert "last_updated" in reloaded.metadata
+        assert reloaded.metadata["last_updated"] == timestamp_str
+
+    def test_save_page_updates_last_updated_on_content_change(self, temp_repo):
+        """Changing content should update last_updated timestamp."""
+        # Create initial page
+        temp_repo.save_page("test", "# Original", metadata={"title": "Test"})
+        initial_page = temp_repo.get_page("test")
+        initial_timestamp = initial_page.metadata["last_updated"]
+
+        # Small delay to ensure timestamp difference
+        time.sleep(0.01)
+
+        # Update content
+        temp_repo.save_page("test", "# Modified", metadata={"title": "Test"})
+        updated_page = temp_repo.get_page("test")
+
+        assert updated_page.metadata["last_updated"] != initial_timestamp
+        # Verify new timestamp is more recent
+        initial_dt = datetime.strptime(initial_timestamp, "%Y-%m-%d %H:%M:%S.%f")
+        updated_dt = datetime.strptime(updated_page.metadata["last_updated"], "%Y-%m-%d %H:%M:%S.%f")
+        assert updated_dt > initial_dt
+
+    def test_save_page_preserves_last_updated_when_no_change(self, temp_repo):
+        """Saving identical content should NOT update last_updated."""
+        # Create initial page
+        temp_repo.save_page("test", "# Content", metadata={"title": "Test"})
+        initial_page = temp_repo.get_page("test")
+        initial_timestamp = initial_page.metadata["last_updated"]
+
+        # Small delay
+        time.sleep(0.01)
+
+        # Save again with identical content and metadata
+        wiki_page, content_changed = temp_repo.save_page("test", "# Content", metadata={"title": "Test"})
+
+        assert content_changed is False
+
+        # Verify last_updated was NOT changed
+        reloaded = temp_repo.get_page("test")
+        assert reloaded.metadata["last_updated"] == initial_timestamp
+
+    def test_save_page_updates_last_updated_on_metadata_change(self, temp_repo):
+        """Changing only metadata should update last_updated."""
+        # Create initial page
+        temp_repo.save_page("test", "# Content", metadata={"author": "Alice"})
+        initial_page = temp_repo.get_page("test")
+        initial_timestamp = initial_page.metadata["last_updated"]
+
+        time.sleep(0.01)
+
+        # Update only metadata (same content)
+        wiki_page, content_changed = temp_repo.save_page(
+            "test",
+            "# Content",
+            metadata={"author": "Bob"},  # Different metadata
+        )
+
+        assert content_changed is True
+        assert wiki_page.metadata["last_updated"] != initial_timestamp
+
+    def test_editable_metadata_excludes_last_updated(self):
+        """last_updated should not appear in editable_metadata for forms."""
+        timestamp = str(datetime.now())
+        page = WikiPage(
+            path="test",
+            content="Content",
+            metadata={
+                "title": "Test",
+                "last_updated": timestamp,
+                "author": "Alice",
+            },
+        )
+
+        fields = page.editable_metadata
+        field_keys = [f["key"] for f in fields]
+
+        assert "title" not in field_keys  # Already excluded
+        assert "last_updated" not in field_keys  # Should be excluded
+        assert "author" in field_keys  # Should be included
+
+    def test_save_page_adds_last_updated_without_other_metadata(self, temp_repo):
+        """Page without any user metadata should still get last_updated."""
+        wiki_page, content_changed = temp_repo.save_page(
+            "test",
+            "# Content",
+            metadata=None,  # No user metadata
+        )
+
+        assert content_changed is True
+        assert "last_updated" in wiki_page.metadata
+        # Should only have system-managed field
+        assert set(wiki_page.metadata.keys()) == {"last_updated"}
+
+        # Verify it persists to disk
+        reloaded = temp_repo.get_page("test")
+        assert "last_updated" in reloaded.metadata
+
+    def test_save_page_overwrites_manual_last_updated(self, temp_repo):
+        """Manually provided last_updated should be overwritten by system."""
+        manual_timestamp = "2020-01-01 00:00:00.000000"
+
+        wiki_page, content_changed = temp_repo.save_page(
+            "test",
+            "# Content",
+            metadata={"last_updated": manual_timestamp},  # User tries to set it
+        )
+
+        # System should overwrite with current timestamp
+        assert wiki_page.metadata["last_updated"] != manual_timestamp
+
+        # Verify format matches system-generated format
+        parsed = datetime.strptime(wiki_page.metadata["last_updated"], "%Y-%m-%d %H:%M:%S.%f")
+        # Should be recent (within last few seconds)
+        assert (datetime.now() - parsed).total_seconds() < 5
 
 
 class TestGitStorageAttachments:

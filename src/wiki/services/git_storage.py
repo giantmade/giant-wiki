@@ -11,6 +11,9 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# System-managed metadata fields that should not be user-editable
+SYSTEM_MANAGED_FIELDS = {"last_updated"}
+
 
 class InvalidPathError(ValueError):
     """Raised when a page path contains invalid characters."""
@@ -132,8 +135,9 @@ class WikiPage:
 
         fields = []
         for key, value in self.metadata.items():
-            if key == "title":
-                continue  # Title shown in header, not properties panel
+            # Exclude title (shown in header) and system-managed fields
+            if key == "title" or key in SYSTEM_MANAGED_FIELDS:
+                continue
 
             field_type = get_metadata_field_type(value)
 
@@ -237,12 +241,26 @@ class GitStorageService:
         file_path = self.pages_path / f"{path}.md"
         file_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Check if content changed (for commit optimization)
+        # Initialize metadata dict if None (for system fields)
+        if metadata is None:
+            metadata = {}
+
+        # Check if content changed (BEFORE adding system fields)
         content_changed = True
         if file_path.exists():
             existing = self.get_page(path)
             if existing:
-                content_changed = existing.content != content or existing.metadata != (metadata or {})
+                # Compare only user-editable metadata (exclude system fields)
+                existing_user_metadata = {k: v for k, v in existing.metadata.items() if k not in SYSTEM_MANAGED_FIELDS}
+                content_changed = existing.content != content or existing_user_metadata != metadata
+
+        # If nothing changed, return existing page without writing
+        if not content_changed:
+            existing = self.get_page(path)
+            return existing, False
+
+        # Add system-managed fields if content changed
+        metadata["last_updated"] = str(datetime.now())
 
         # Combine content and metadata using frontmatter
         if metadata:
