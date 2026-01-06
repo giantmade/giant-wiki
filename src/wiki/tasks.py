@@ -1,6 +1,7 @@
 """Celery tasks for wiki operations."""
 
 import logging
+from datetime import datetime
 
 from celery import shared_task
 
@@ -11,6 +12,29 @@ from .services.search import get_search_service
 from .services.sidebar import invalidate_sidebar_cache
 
 logger = logging.getLogger(__name__)
+
+
+def deserialize_metadata(metadata: dict | None) -> dict | None:
+    """Convert metadata from JSON-serializable format back to Python objects.
+
+    Converts ISO format strings back to datetime objects.
+    """
+    if not metadata:
+        return None
+
+    deserialized = {}
+    for key, value in metadata.items():
+        if isinstance(value, str):
+            # Try to parse as datetime
+            try:
+                deserialized[key] = datetime.fromisoformat(value)
+            except (ValueError, AttributeError):
+                # Not a datetime string, keep as is
+                deserialized[key] = value
+        else:
+            deserialized[key] = value
+
+    return deserialized
 
 
 @shared_task(bind=True, name="wiki.save_and_sync")
@@ -53,6 +77,10 @@ def save_and_sync(
     }
 
     try:
+        # Deserialize metadata from JSON format (datetime strings → datetime objects)
+        metadata = deserialize_metadata(metadata)
+        original_metadata = deserialize_metadata(original_metadata)
+
         # 1. Save page to filesystem
         storage = get_storage_service()
         wiki_page, content_changed = storage.save_page(page_path, content, metadata)

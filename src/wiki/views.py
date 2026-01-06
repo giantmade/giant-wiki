@@ -18,6 +18,28 @@ from .services.search import get_search_service
 logger = logging.getLogger(__name__)
 
 
+def serialize_metadata(metadata: dict | None) -> dict | None:
+    """Convert metadata to JSON-serializable format for Celery tasks.
+
+    Converts datetime objects to ISO format strings.
+    """
+    if not metadata:
+        return None
+
+    from datetime import date, datetime
+
+    serialized = {}
+    for key, value in metadata.items():
+        if isinstance(value, datetime):
+            serialized[key] = value.isoformat()
+        elif isinstance(value, date):
+            serialized[key] = value.isoformat()
+        else:
+            serialized[key] = value
+
+    return serialized
+
+
 def render_markdown(content: str) -> str:
     """Render markdown content to HTML."""
     return markdown(
@@ -137,13 +159,14 @@ def edit(request, page_path: str):
 
         try:
             # Dispatch async task to save page, update search, and commit
+            # Serialize metadata to JSON-compatible format for Celery
             dispatch_task(
                 "wiki.save_and_sync",
                 kwargs={
                     "page_path": page_path,
                     "content": content,
-                    "metadata": metadata if metadata else None,
-                    "original_metadata": original_metadata,
+                    "metadata": serialize_metadata(metadata),
+                    "original_metadata": serialize_metadata(original_metadata),
                     "is_new_page": is_new_page,
                 },
                 initial_logs=f"Saving page: {page_path}",
