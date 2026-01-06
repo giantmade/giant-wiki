@@ -1,8 +1,6 @@
 {
   "$schema": "https://schema.railpack.com",
   "deploy": {
-    "aptPackages": ["git"],
-    "startCommand": "scripts/railway-start.sh",
-    "prepareCommand": "cd src && python manage.py collectstatic --noinput && python manage.py rebuild_search"
+    "aptPackages": ["default-libmysqlclient-dev"]
   }
 }

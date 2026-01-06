@@ -1,6 +1,5 @@
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "dev.Dockerfile"
+builder = "RAILPACK"
 
 [deploy]
 startCommand = "scripts/railway-start.sh"
