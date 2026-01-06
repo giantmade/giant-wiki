@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.railpack.com",
   "deploy": {
-    "aptPackages": ["default-libmysqlclient-dev"]
+    "aptPackages": ["default-libmysqlclient-dev", "git", "openssh-client"]
   }
 }
