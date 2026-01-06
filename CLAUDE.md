@@ -89,6 +89,30 @@ attachments/
 - With real data: Set `WIKI_REPO_URL` in `.env`, run `make clone-content`
 - Production: Cloned from `WIKI_REPO_URL` environment variable
 
+### Frontmatter Metadata
+
+Pages support YAML frontmatter for metadata:
+
+```yaml
+---
+title: "Page Title"
+author: "Alice"
+last_updated: 2026-01-06 16:56:00.736849
+---
+```
+
+**System-Managed Fields:**
+- `last_updated` - Automatically set on every save (format: `YYYY-MM-DD HH:MM:SS.ffffff`)
+- Only updated when content or user metadata actually changes
+- Not editable by users (excluded from edit form)
+
+**User-Editable Fields:**
+- All other fields are user-defined and editable
+- Types auto-detected for form rendering (string, number, date, datetime, boolean, list)
+- `title` field is special - shown in page header, not in properties panel
+
+Implementation: `src/wiki/services/git_storage.py` (SYSTEM_MANAGED_FIELDS constant)
+
 ## Environment Variables
 
 | Variable | Description |
