@@ -156,6 +156,11 @@
             <!-- Sidebar navigation -->
             <div class="px-4 py-4 text-sm flex-1 overflow-y-auto">
                 {% block sidebar %}
+                <!-- Pages Section Header -->
+                <div class="px-0 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Pages
+                </div>
+
                 {% for category in sidebar_categories %}
                 <div class="mb-4" x-data="{ open: {{ category.is_expanded|yesno:'true,false' }} }">
                     <button
@@ -189,16 +194,28 @@
                 {% empty %}
                 <p class="text-gray-500">No pages yet</p>
                 {% endfor %}
-                {% endblock %}
-            </div>
 
-            <!-- Footer links -->
-            <div class="absolute bottom-0 left-0 right-0 px-4 py-3 border-t border-gray-800 bg-gray-900">
-                <div class="text-xs text-gray-500 flex gap-3">
-                    <a href="{% url 'history' %}" class="hover:text-gray-300">History</a>
-                    <span class="text-gray-700">|</span>
-                    <a href="{% url 'tasks_list' %}" class="hover:text-gray-300">Tasks</a>
+                <!-- System Section Header -->
+                <div class="px-0 py-2 mt-6 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    System
                 </div>
+
+                <!-- History -->
+                <a href="{% url 'history' %}" class="block px-0 py-2.5 text-sm font-normal text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    History
+                </a>
+
+                <!-- Tasks -->
+                <a href="{% url 'tasks_list' %}" class="block px-0 py-2.5 text-sm font-normal text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+                    </svg>
+                    Tasks
+                </a>
+                {% endblock %}
             </div>
         </nav>
 
