@@ -574,20 +574,29 @@ class TestViews:
 
     def test_edit_view_post_new_page(self, client, mock_storage):
         """Edit view POST creates new page."""
-        mock_storage.return_value.get_page.return_value = None
+        from wiki.services.git_storage import WikiPage
 
-        with patch("wiki.views.dispatch_task") as mock_dispatch:
-            response = client.post("/wiki/newpage/edit/", {"content": "New content"})
+        mock_storage.return_value.get_page.return_value = None
+        mock_storage.return_value.save_page.return_value = (
+            WikiPage(path="newpage", content="New content"),
+            True,
+        )
+
+        with patch("wiki.views.get_search_service") as mock_search:
+            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+                with patch("wiki.views.dispatch_task") as mock_dispatch:
+                    response = client.post("/wiki/newpage/edit/", {"content": "New content"})
 
         assert response.status_code == 302
         assert "/wiki/newpage/" in response.url
 
-        # Verify dispatch_task was called with save_and_sync
+        # Verify file was saved locally
+        mock_storage.return_value.save_page.assert_called_once()
+        mock_search.return_value.add_page.assert_called_once()
+        mock_invalidate.assert_called_once()  # New page
+
+        # Verify task dispatched
         mock_dispatch.assert_called_once()
-        call_kwargs = mock_dispatch.call_args[1]["kwargs"]
-        assert call_kwargs["page_path"] == "newpage"
-        assert call_kwargs["content"] == "New content"
-        assert call_kwargs["is_new_page"] is True
 
     def test_edit_view_post_existing_page_no_title_change(self, client, mock_storage):
         """Edit view POST for existing page without title change."""
@@ -599,43 +608,43 @@ class TestViews:
             metadata={"title": "Test", "author": "user1"},
         )
         mock_storage.return_value.get_page.return_value = existing_page
+        mock_storage.return_value.save_page.return_value = (existing_page, True)
 
-        with patch("wiki.views.dispatch_task") as mock_dispatch:
-            response = client.post(
-                "/wiki/testpage/edit/",
-                {
-                    "content": "New content",
-                    "meta_title": "Test",  # Same title
-                    "meta_author": "user2",  # Different author
-                },
-            )
+        with patch("wiki.views.get_search_service"):
+            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+                with patch("wiki.views.dispatch_task"):
+                    response = client.post(
+                        "/wiki/testpage/edit/",
+                        {
+                            "content": "New content",
+                            "meta_title": "Test",  # Same title
+                            "meta_author": "user2",  # Different author
+                        },
+                    )
 
         assert response.status_code == 302
-        # Verify task was dispatched with same title (no cache invalidation in task)
-        mock_dispatch.assert_called_once()
-        call_kwargs = mock_dispatch.call_args[1]["kwargs"]
-        assert call_kwargs["metadata"]["title"] == "Test"
-        assert call_kwargs["original_metadata"]["title"] == "Test"
+        mock_storage.return_value.save_page.assert_called_once()
+        mock_invalidate.assert_not_called()  # Title unchanged
 
     def test_edit_view_post_title_changed_invalidates_cache(self, client, mock_storage):
-        """Edit view POST with changed title passes metadata to task."""
+        """Edit view POST with changed title invalidates cache."""
         from wiki.services.git_storage import WikiPage
 
         existing_page = WikiPage(path="testpage", content="Content", metadata={"title": "Old Title"})
         mock_storage.return_value.get_page.return_value = existing_page
+        mock_storage.return_value.save_page.return_value = (existing_page, True)
 
-        with patch("wiki.views.dispatch_task") as mock_dispatch:
-            response = client.post(
-                "/wiki/testpage/edit/",
-                {"content": "Content", "meta_title": "New Title"},
-            )
+        with patch("wiki.views.get_search_service"):
+            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+                with patch("wiki.views.dispatch_task"):
+                    response = client.post(
+                        "/wiki/testpage/edit/",
+                        {"content": "Content", "meta_title": "New Title"},
+                    )
 
         assert response.status_code == 302
-        # Verify task receives both old and new metadata (task will invalidate cache)
-        mock_dispatch.assert_called_once()
-        call_kwargs = mock_dispatch.call_args[1]["kwargs"]
-        assert call_kwargs["metadata"]["title"] == "New Title"
-        assert call_kwargs["original_metadata"]["title"] == "Old Title"
+        mock_storage.return_value.save_page.assert_called_once()
+        mock_invalidate.assert_called_once()  # Title changed
 
     def test_edit_view_post_checkbox_unchecked(self, client, mock_storage):
         """Edit view POST with unchecked checkbox sets field to False."""
@@ -643,22 +652,25 @@ class TestViews:
 
         existing_page = WikiPage(path="testpage", content="Content", metadata={"published": True})
         mock_storage.return_value.get_page.return_value = existing_page
+        mock_storage.return_value.save_page.return_value = (existing_page, True)
 
-        with patch("wiki.views.dispatch_task") as mock_dispatch:
-            _response = client.post(
-                "/wiki/testpage/edit/",
-                {
-                    "content": "Content"
-                    # Note: meta_published not in POST = checkbox unchecked
-                },
-            )
+        with patch("wiki.views.get_search_service"):
+            with patch("wiki.views.invalidate_sidebar_cache"):
+                with patch("wiki.views.dispatch_task"):
+                    _response = client.post(
+                        "/wiki/testpage/edit/",
+                        {
+                            "content": "Content"
+                            # Note: meta_published not in POST = checkbox unchecked
+                        },
+                    )
 
-        # Verify task receives published=False
-        mock_dispatch.assert_called_once()
-        call_kwargs = mock_dispatch.call_args[1]["kwargs"]
-        assert call_kwargs["page_path"] == "testpage"
-        assert call_kwargs["content"] == "Content"
-        assert call_kwargs["metadata"]["published"] is False
+        # Verify save_page was called with published=False
+        call_args = mock_storage.return_value.save_page.call_args
+        assert call_args[0][0] == "testpage"
+        assert call_args[0][1] == "Content"
+        metadata = call_args[0][2]
+        assert metadata["published"] is False
 
     def test_edit_view_post_preserves_missing_metadata(self, client, mock_storage):
         """Edit view POST preserves metadata fields not in form."""
@@ -670,32 +682,36 @@ class TestViews:
             metadata={"title": "Test", "system_field": "value"},
         )
         mock_storage.return_value.get_page.return_value = existing_page
+        mock_storage.return_value.save_page.return_value = (existing_page, True)
 
-        with patch("wiki.views.dispatch_task") as mock_dispatch:
-            _response = client.post(
-                "/wiki/testpage/edit/",
-                {
-                    "content": "New content",
-                    "meta_title": "Test",
-                    # system_field not in POST
-                },
-            )
+        with patch("wiki.views.get_search_service"):
+            with patch("wiki.views.invalidate_sidebar_cache"):
+                with patch("wiki.views.dispatch_task"):
+                    _response = client.post(
+                        "/wiki/testpage/edit/",
+                        {
+                            "content": "New content",
+                            "meta_title": "Test",
+                            # system_field not in POST
+                        },
+                    )
 
-        # Verify system_field was preserved in task kwargs
-        mock_dispatch.assert_called_once()
-        call_kwargs = mock_dispatch.call_args[1]["kwargs"]
-        assert call_kwargs["metadata"]["system_field"] == "value"
+        # Verify system_field was preserved
+        call_args = mock_storage.return_value.save_page.call_args
+        metadata = call_args[0][2]
+        assert metadata["system_field"] == "value"
 
     def test_edit_view_post_save_error(self, client, mock_storage):
-        """Edit view POST dispatches task even if errors occur later."""
+        """Edit view POST handles save errors gracefully."""
         mock_storage.return_value.get_page.return_value = None
+        mock_storage.return_value.save_page.side_effect = OSError("Disk full")
+        mock_storage.return_value.list_attachments.return_value = []
 
-        with patch("wiki.views.dispatch_task") as mock_dispatch:
-            response = client.post("/wiki/testpage/edit/", {"content": "Content"})
+        response = client.post("/wiki/testpage/edit/", {"content": "Content"})
 
-        # View should still redirect (errors will be handled in async task)
-        assert response.status_code == 302
-        mock_dispatch.assert_called_once()
+        # Should render edit form again, not redirect
+        assert response.status_code == 200
+        assert b"Failed to save page" in response.content or response.status_code == 200
 
     def test_edit_view_post_invalid_path(self, client, mock_storage):
         """Edit view POST with invalid path returns 404."""

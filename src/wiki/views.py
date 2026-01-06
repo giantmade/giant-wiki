@@ -14,6 +14,7 @@ from core.models import dispatch_task
 
 from .services.git_storage import InvalidPathError, WikiPage, get_storage_service
 from .services.search import get_search_service
+from .services.sidebar import invalidate_sidebar_cache
 
 logger = logging.getLogger(__name__)
 
@@ -158,8 +159,24 @@ def edit(request, page_path: str):
                     metadata[key] = original_value
 
         try:
-            # Dispatch async task to save page, update search, and commit
-            # Serialize metadata to JSON-compatible format for Celery
+            # Save file locally in web container (for immediate viewing)
+            storage.save_page(page_path, content, metadata if metadata else None)
+
+            # Update search index
+            search_service = get_search_service()
+            search_service.add_page(page_path, content)
+
+            # Invalidate sidebar cache if needed
+            should_invalidate_cache = is_new_page
+            if not should_invalidate_cache and metadata:
+                if "title" in metadata and metadata.get("title") != original_metadata.get("title"):
+                    should_invalidate_cache = True
+
+            if should_invalidate_cache:
+                invalidate_sidebar_cache()
+
+            # Dispatch async task to save (again) in worker and commit to Git
+            # Worker writes the file in its own filesystem, then commits
             dispatch_task(
                 "wiki.save_and_sync",
                 kwargs={
@@ -169,10 +186,10 @@ def edit(request, page_path: str):
                     "original_metadata": serialize_metadata(original_metadata),
                     "is_new_page": is_new_page,
                 },
-                initial_logs=f"Saving page: {page_path}",
+                initial_logs=f"Committing changes for: {page_path}",
             )
 
-            messages.success(request, "Page is being saved...")
+            messages.success(request, "Page saved successfully.")
             return redirect(reverse("page", kwargs={"page_path": page_path}))
 
         except OSError as e:
