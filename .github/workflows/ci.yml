@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv python install 3.13
+      - run: uv sync --frozen
+      - name: Check formatting
+        run: uv run ruff format --check .
+      - name: Check linting
+        run: uv run ruff check .
+
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      SECRET_KEY: test-secret-key-for-ci-do-not-use-in-production
+      DEBUG: False
+      DATABASE_URL: sqlite:////tmp/test_wiki.db
+      WIKI_REPO_PATH: /tmp/wiki-repo
+      CELERY_BROKER_URL: redis://127.0.0.1:6379/1
+      CELERY_RESULT_BACKEND: redis://127.0.0.1:6379/1
+      SITE_TITLE: Giant Wiki CI
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Create required directories
+        run: mkdir -p /tmp/wiki-repo
+
+      - name: Run migrations
+        working-directory: src
+        run: uv run python manage.py migrate
+
+      - name: Run tests with coverage
+        working-directory: src
+        run: uv run pytest -n auto --cov --cov-report=term-missing --cov-report=html
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: src/htmlcov/
+          retention-days: 7
