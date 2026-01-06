@@ -113,6 +113,18 @@ last_updated: 2026-01-06 16:56:00.736849
 
 Implementation: `src/wiki/services/git_storage.py` (SYSTEM_MANAGED_FIELDS constant)
 
+## Page Features
+
+### GitHub Source Link
+
+Each wiki page displays a "View source" link in the footer that links to the original markdown file on GitHub.
+
+- **Configuration:** Set `WIKI_REPO_URL` to enable (automatically detected from environment)
+- **Supported formats:** Both SSH (`git@github.com:org/repo.git`) and HTTPS (`https://github.com/org/repo.git`)
+- **Branch:** Uses `WIKI_REPO_BRANCH` if set, otherwise defaults to `main`
+- **Location:** Footer below main content card
+- **Implementation:** `get_github_source_url()` in `src/wiki/services/git_storage.py`
+
 ## Environment Variables
 
 | Variable | Description |

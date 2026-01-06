@@ -25,3 +25,22 @@ def is_url(value) -> bool:
         return all([result.scheme in ("http", "https"), result.netloc])
     except Exception:
         return False
+
+
+@register.filter
+def github_source_url(page_path: str) -> str | None:
+    """Generate GitHub source URL for a wiki page.
+
+    Usage in templates:
+        {% load wiki_filters %}
+        {{ page.path|github_source_url }}
+
+    Args:
+        page_path: The page path (e.g., "foo/bar")
+
+    Returns:
+        GitHub URL or None if not configured
+    """
+    from wiki.services.git_storage import get_github_source_url
+
+    return get_github_source_url(page_path)

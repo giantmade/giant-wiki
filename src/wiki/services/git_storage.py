@@ -1,6 +1,7 @@
 """Git-based storage backend for wiki pages."""
 
 import logging
+import re
 import subprocess
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -549,3 +550,47 @@ def reset_storage_service() -> None:
     """Reset the storage service singleton (for testing)."""
     global _storage_service
     _storage_service = None
+
+
+def get_github_source_url(page_path: str) -> str | None:
+    """Generate GitHub source URL for a wiki page.
+
+    Args:
+        page_path: Page path (e.g., "foo/bar")
+
+    Returns:
+        GitHub URL to the markdown file, or None if WIKI_REPO_URL is not configured
+
+    Example:
+        >>> get_github_source_url("foo/bar")
+        "https://github.com/org/repo/blob/main/pages/foo/bar.md"
+    """
+    repo_url = settings.WIKI_REPO_URL
+    if not repo_url:
+        return None
+
+    branch = settings.WIKI_REPO_BRANCH or "main"
+
+    # Parse GitHub org/repo from URL
+    # Support both SSH and HTTPS formats:
+    # - git@github.com:org/repo.git
+    # - https://github.com/org/repo.git
+    # - https://github.com/org/repo (without .git)
+
+    # SSH format
+    ssh_match = re.match(r"^git@github\.com:([^/]+)/(.+?)(\.git)?$", repo_url)
+    if ssh_match:
+        org = ssh_match.group(1)
+        repo = ssh_match.group(2)
+        return f"https://github.com/{org}/{repo}/blob/{branch}/pages/{page_path}.md"
+
+    # HTTPS format
+    https_match = re.match(r"^https?://github\.com/([^/]+)/(.+?)(\.git)?$", repo_url)
+    if https_match:
+        org = https_match.group(1)
+        repo = https_match.group(2)
+        return f"https://github.com/{org}/{repo}/blob/{branch}/pages/{page_path}.md"
+
+    # Invalid format - log warning and return None
+    logger.warning("Invalid GitHub URL format: %s", repo_url)
+    return None

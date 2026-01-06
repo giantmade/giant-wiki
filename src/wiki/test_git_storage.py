@@ -8,12 +8,14 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
+from django.test import override_settings
 
 from wiki.services.git_storage import (
     GitOperationError,
     GitStorageService,
     InvalidPathError,
     WikiPage,
+    get_github_source_url,
     get_metadata_field_type,
     get_storage_service,
     reset_storage_service,
@@ -281,6 +283,75 @@ class TestGetMetadataFieldType:
 
     def test_list_returns_text(self):
         assert get_metadata_field_type(["a", "b"]) == "text"
+
+
+class TestGitHubSourceURL:
+    """Tests for GitHub source URL generation."""
+
+    @override_settings(WIKI_REPO_URL="", WIKI_REPO_BRANCH="")
+    def test_no_repo_url_returns_none(self):
+        """Should return None when WIKI_REPO_URL is not configured."""
+        assert get_github_source_url("foo/bar") is None
+
+    @override_settings(WIKI_REPO_URL="git@github.com:myorg/myrepo.git", WIKI_REPO_BRANCH="")
+    def test_ssh_format_with_git_suffix(self):
+        """Should parse SSH format with .git suffix."""
+        url = get_github_source_url("foo/bar")
+        assert url == "https://github.com/myorg/myrepo/blob/main/pages/foo/bar.md"
+
+    @override_settings(WIKI_REPO_URL="git@github.com:myorg/myrepo", WIKI_REPO_BRANCH="")
+    def test_ssh_format_without_git_suffix(self):
+        """Should parse SSH format without .git suffix."""
+        url = get_github_source_url("foo/bar")
+        assert url == "https://github.com/myorg/myrepo/blob/main/pages/foo/bar.md"
+
+    @override_settings(WIKI_REPO_URL="https://github.com/myorg/myrepo.git", WIKI_REPO_BRANCH="")
+    def test_https_format_with_git_suffix(self):
+        """Should parse HTTPS format with .git suffix."""
+        url = get_github_source_url("foo/bar")
+        assert url == "https://github.com/myorg/myrepo/blob/main/pages/foo/bar.md"
+
+    @override_settings(WIKI_REPO_URL="https://github.com/myorg/myrepo", WIKI_REPO_BRANCH="")
+    def test_https_format_without_git_suffix(self):
+        """Should parse HTTPS format without .git suffix."""
+        url = get_github_source_url("foo/bar")
+        assert url == "https://github.com/myorg/myrepo/blob/main/pages/foo/bar.md"
+
+    @override_settings(WIKI_REPO_URL="http://github.com/myorg/myrepo.git", WIKI_REPO_BRANCH="")
+    def test_http_format(self):
+        """Should parse HTTP format (converts to HTTPS in URL)."""
+        url = get_github_source_url("foo/bar")
+        assert url == "https://github.com/myorg/myrepo/blob/main/pages/foo/bar.md"
+
+    @override_settings(WIKI_REPO_URL="git@github.com:myorg/myrepo.git", WIKI_REPO_BRANCH="develop")
+    def test_custom_branch(self):
+        """Should use custom branch when WIKI_REPO_BRANCH is set."""
+        url = get_github_source_url("foo/bar")
+        assert url == "https://github.com/myorg/myrepo/blob/develop/pages/foo/bar.md"
+
+    @override_settings(WIKI_REPO_URL="git@github.com:myorg/myrepo.git", WIKI_REPO_BRANCH="main")
+    def test_index_page(self):
+        """Should handle index page correctly."""
+        url = get_github_source_url("index")
+        assert url == "https://github.com/myorg/myrepo/blob/main/pages/index.md"
+
+    @override_settings(WIKI_REPO_URL="git@github.com:myorg/myrepo.git", WIKI_REPO_BRANCH="")
+    def test_nested_page_path(self):
+        """Should handle deeply nested page paths."""
+        url = get_github_source_url("docs/guides/getting-started")
+        assert url == "https://github.com/myorg/myrepo/blob/main/pages/docs/guides/getting-started.md"
+
+    @override_settings(WIKI_REPO_URL="not-a-valid-github-url", WIKI_REPO_BRANCH="")
+    def test_invalid_url_format_returns_none(self):
+        """Should return None and log warning for invalid URL format."""
+        url = get_github_source_url("foo/bar")
+        assert url is None
+
+    @override_settings(WIKI_REPO_URL="git@gitlab.com:myorg/myrepo.git", WIKI_REPO_BRANCH="")
+    def test_non_github_url_returns_none(self):
+        """Should return None for non-GitHub URLs."""
+        url = get_github_source_url("foo/bar")
+        assert url is None
 
 
 class TestGitStorageBasicOperations:
