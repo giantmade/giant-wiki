@@ -198,6 +198,8 @@ The index page (`/wiki/index/`) displays two dashboard widgets below the main co
 | `WIKI_REPO_BRANCH` | Git branch to use (optional, defaults to repo default) |
 | `CELERY_BROKER_URL` | Redis URL for Celery |
 | `GIT_SSH_KEY` | Base64-encoded SSH key (production) |
+| `TEAMS_NOTIFICATION_WEBHOOK` | Teams webhook URL for notifications (optional) |
+| `SITE_URL` | Base URL for wiki (required for Teams notifications) |
 
 ## Performance Optimizations
 
@@ -240,6 +242,49 @@ The wiki includes a web UI for monitoring Celery background tasks at `/tasks/`.
 - Templates: `src/core/templates/core/tasks_list.html`, `src/core/templates/core/task_detail.html`
 - Models: Task and TaskAuditTrail in `src/core/models.py`
 - Task dispatcher: `dispatch_task()` function for launching Celery tasks with tracking
+
+## Teams Notifications
+
+The wiki can send notifications to Microsoft Teams when pages are created, edited, moved, or deleted.
+
+### Configuration
+
+| Variable | Description |
+|----------|-------------|
+| `TEAMS_NOTIFICATION_WEBHOOK` | Microsoft Teams webhook URL (optional) |
+| `SITE_URL` | Base URL for constructing page links (required if using notifications) |
+
+### Notification Types
+
+- **Create**: "New page created: [Page Title]" with link to page
+- **Edit**: "Page updated: [Page Title]" with link to page
+- **Delete**: "Page deleted: [Page Title]" (no link)
+- **Move**: "Page moved: [Page Title]" with link to new location
+
+### Implementation
+
+- Notifications sent asynchronously via Celery task `wiki.send_teams_notification`
+- Page operations never fail if notification webhook fails
+- Errors logged to task logs but marked as "completed_with_errors"
+- Notifications skipped silently if `TEAMS_NOTIFICATION_WEBHOOK` not configured
+
+### Message Format
+
+Uses Microsoft Teams Adaptive Cards v1.2:
+- Simple card with title and "View Page" button
+- Generic messages without user attribution
+- 10-second timeout for webhook requests
+
+### Error Handling
+
+All errors are gracefully handled:
+- Webhook not configured: Skip silently
+- Invalid `SITE_URL`: Log error, complete task with errors
+- Webhook timeout: Log warning, complete task with errors
+- Connection error: Log warning, complete task with errors
+- HTTP 4xx/5xx: Log warning, complete task with errors
+
+Notifications are fire-and-forget - errors never block page operations.
 
 ## Deployment
 

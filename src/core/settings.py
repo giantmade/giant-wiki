@@ -97,6 +97,10 @@ WIKI_REPO_PATH = Path(config("WIKI_REPO_PATH", default=str(VAR_DIR / "repo")))
 WIKI_REPO_URL = config("WIKI_REPO_URL", default="")
 WIKI_REPO_BRANCH = config("WIKI_REPO_BRANCH", default="")
 
+# Teams notification configuration
+TEAMS_NOTIFICATION_WEBHOOK = config("TEAMS_NOTIFICATION_WEBHOOK", default="")
+SITE_URL = config("SITE_URL", default="")
+
 # Celery configuration
 CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/1")
 CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/1")

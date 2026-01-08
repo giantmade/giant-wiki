@@ -320,3 +320,84 @@ def warm_sidebar_cache():
     logger.info("Widget caches warmed")
 
     return len(pages)
+
+
+@shared_task(bind=True, name="wiki.send_teams_notification")
+def send_teams_notification(self, task_id, operation: str, page_title: str, page_path: str = None):
+    """Send Teams notification for wiki page operation.
+
+    Args:
+        task_id: Task model ID for tracking
+        operation: Operation type (created, updated, deleted, moved)
+        page_title: Title of the page
+        page_path: Wiki page path (None for deleted pages)
+    """
+    import requests
+
+    from .notifications import (
+        build_page_url,
+        build_teams_card,
+        get_webhook_url,
+        send_teams_webhook,
+        should_send_notification,
+    )
+
+    task = Task.objects.get(id=task_id)
+    task.start()
+
+    try:
+        # Check if notifications are enabled
+        if not should_send_notification():
+            task.complete(success=True, logs="\nTeams notifications not configured (skipped)")
+            return False
+
+        webhook_url = get_webhook_url()
+        task.logs += f"\nSending Teams notification for {operation}: {page_title}"
+
+        # Build page URL (None for deleted pages)
+        page_url = None
+        if page_path and operation != "deleted":
+            try:
+                page_url = build_page_url(page_path)
+                task.logs += f"\nPage URL: {page_url}"
+            except ValueError as e:
+                task.complete(
+                    success=True,
+                    has_errors=True,
+                    logs=f"\nFailed to build page URL: {e}\nNotification not sent",
+                )
+                return False
+
+        # Build and send card
+        card = build_teams_card(operation, page_title, page_url)
+        send_teams_webhook(webhook_url, card)
+
+        task.complete(success=True, logs="\nTeams notification sent successfully")
+        return True
+
+    except requests.Timeout:
+        task.complete(
+            success=True,
+            has_errors=True,
+            logs="\nTeams webhook request timed out (non-critical)",
+        )
+        logger.warning("Teams webhook timeout for %s: %s", operation, page_title)
+        return False
+
+    except requests.RequestException as e:
+        task.complete(
+            success=True,
+            has_errors=True,
+            logs=f"\nTeams webhook failed: {e} (non-critical)",
+        )
+        logger.warning("Teams webhook failed for %s: %s - %s", operation, page_title, e)
+        return False
+
+    except Exception as e:
+        task.complete(
+            success=True,
+            has_errors=True,
+            logs=f"\nUnexpected error sending notification: {e}",
+        )
+        logger.error("Unexpected error in Teams notification: %s", e, exc_info=True)
+        return False

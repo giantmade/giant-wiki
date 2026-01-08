@@ -168,6 +168,25 @@ def edit(request, page_path: str):
                 logger.warning("Git commit failed for %s: %s", page_path, e)
 
             messages.success(request, "Page saved successfully.")
+
+            # Send Teams notification (async, non-blocking)
+            from core.models import dispatch_task
+
+            try:
+                operation = "created" if is_new_page else "updated"
+                dispatch_task(
+                    "wiki.send_teams_notification",
+                    kwargs={
+                        "operation": operation,
+                        "page_title": wiki_page.title,
+                        "page_path": page_path,
+                    },
+                    initial_logs=f"Sending Teams notification for {operation}: {page_path}",
+                )
+            except Exception as e:
+                # Never fail page save due to notification error
+                logger.warning("Failed to dispatch Teams notification: %s", e)
+
             return redirect(reverse("page", kwargs={"page_path": page_path}))
 
         except OSError as e:
@@ -226,6 +245,22 @@ def delete(request, page_path: str):
             logger.warning("Git commit failed for delete %s: %s", page_path, e)
 
         messages.success(request, f"Page '{wiki_page.title}' deleted successfully")
+
+        # Send Teams notification (async, non-blocking)
+        from core.models import dispatch_task
+
+        try:
+            dispatch_task(
+                "wiki.send_teams_notification",
+                kwargs={
+                    "operation": "deleted",
+                    "page_title": wiki_page.title,
+                    "page_path": None,  # Page no longer exists
+                },
+                initial_logs=f"Sending Teams notification for deletion: {page_path}",
+            )
+        except Exception as e:
+            logger.warning("Failed to dispatch Teams notification: %s", e)
     else:
         messages.error(request, "Failed to delete page")
 
@@ -281,6 +316,23 @@ def move(request, page_path: str):
                 logger.warning("Git commit failed for move: %s", e)
 
             messages.success(request, f"Page moved to '{new_path}'")
+
+            # Send Teams notification (async, non-blocking)
+            from core.models import dispatch_task
+
+            try:
+                dispatch_task(
+                    "wiki.send_teams_notification",
+                    kwargs={
+                        "operation": "moved",
+                        "page_title": new_page.title if new_page else new_path,
+                        "page_path": new_path,
+                    },
+                    initial_logs=f"Sending Teams notification for move: {page_path} -> {new_path}",
+                )
+            except Exception as e:
+                logger.warning("Failed to dispatch Teams notification: %s", e)
+
             return redirect(reverse("page", kwargs={"page_path": new_path}))
         else:
             messages.error(request, "Failed to move page")
