@@ -120,13 +120,13 @@ Implementation: `src/wiki/services/git_storage.py` (SYSTEM_MANAGED_FIELDS consta
 All wiki pages have CRUD buttons in the header for page management:
 
 **Create New Pages:**
-- Blue "New Page" button opens modal dialog
+- "New Page" button opens modal dialog
 - Enter page path (e.g., "guides/setup" or "teams/engineering")
 - Client-side validation prevents invalid paths (.., absolute paths)
 - Redirects to edit page for new content
 
 **Delete Pages:**
-- Red "Delete" button with confirmation dialog
+- "Delete" button with confirmation dialog
 - Removes page file from Git repository
 - Removes from search index
 - Invalidates sidebar and widget caches
@@ -134,7 +134,7 @@ All wiki pages have CRUD buttons in the header for page management:
 - Commits with message "Delete: {page_path}"
 
 **Move/Rename Pages:**
-- Gray "Move" button opens modal dialog
+- "Move" button opens modal dialog
 - Shows current path and accepts new path input
 - Moves page file and attachments directory automatically
 - Updates search index (removes old, adds new)
@@ -142,12 +142,27 @@ All wiki pages have CRUD buttons in the header for page management:
 - Commits with message "Move: {old} -> {new}"
 - Note: Wikilinks in other pages are NOT automatically updated
 
-**Button Order:** [New Page] [Move] [Edit] [Delete]
+**Archive Pages:**
+- "Archive" button opens confirmation modal
+- Automatically moves page to `archive/{original_path}`
+- Moves attachments with page
+- Updates search index (removes old, adds new)
+- Invalidates caches
+- Commits with message "Archive: {page_path}"
+- Prevents double-archiving (pages already in archive/)
+- Note: Archived pages remain accessible and visible in sidebar
+
+**Button Styling:**
+- All buttons use subtle gray backgrounds (`bg-gray-100 hover:bg-gray-200`)
+- Differentiated by text and icon colors: blue (New), gray (Move), green (Edit), amber (Archive), red (Delete)
+- Maintains accessibility with proper focus rings
+
+**Button Order:** [New Page] [Move] [Edit] [Archive] [Delete]
 
 **Implementation:**
-- Views: `delete()` and `move()` in `src/wiki/views.py`
+- Views: `delete()`, `move()`, `archive()` in `src/wiki/views.py`
 - Service methods: `delete_page()`, `move_page()` in `src/wiki/services/git_storage.py`
-- URL patterns: `/wiki/<path>/delete/` and `/wiki/<path>/move/`
+- URL patterns: `/wiki/<path>/delete/`, `/wiki/<path>/move/`, `/wiki/<path>/archive/`
 - Template: `src/core/templates/wiki/page.html` (Alpine.js modals)
 
 ### GitHub Source Link
@@ -260,6 +275,7 @@ The wiki can send notifications to Microsoft Teams when pages are created, edite
 - **Edit**: "Page updated: [Page Title]" with link to page
 - **Delete**: "Page deleted: [Page Title]" (no link)
 - **Move**: "Page moved: [Page Title]" with link to new location
+- **Archive**: "Page archived: [Page Title]" with link to archived location
 
 ### Implementation
 

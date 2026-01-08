@@ -23,6 +23,7 @@ urlpatterns = [
     path("wiki/<path:page_path>/edit/", wiki_views.edit, name="edit"),
     path("wiki/<path:page_path>/delete/", wiki_views.delete, name="delete"),
     path("wiki/<path:page_path>/move/", wiki_views.move, name="move"),
+    path("wiki/<path:page_path>/archive/", wiki_views.archive, name="archive"),
     path("wiki/<path:page_path>/", wiki_views.page, name="page"),
     # Search
     path("search/", wiki_views.search, name="search"),

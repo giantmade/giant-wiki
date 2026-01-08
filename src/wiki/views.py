@@ -344,6 +344,84 @@ def move(request, page_path: str):
     return redirect(reverse("page", kwargs={"page_path": page_path}))
 
 
+def archive(request, page_path: str):
+    """Archive a wiki page by moving it to archive/ directory."""
+    from django.http import HttpResponseNotAllowed
+
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    storage = get_storage_service()
+
+    try:
+        wiki_page = storage.get_page(page_path)
+    except InvalidPathError:
+        return HttpResponseNotFound("Invalid page path")
+
+    if not wiki_page:
+        messages.error(request, "Page not found")
+        return redirect(reverse("page", kwargs={"page_path": "index"}))
+
+    # Check if page is already archived
+    if page_path.startswith("archive/"):
+        messages.error(request, "Page is already archived")
+        return redirect(reverse("page", kwargs={"page_path": page_path}))
+
+    # Calculate archive destination
+    new_path = f"archive/{page_path}"
+
+    try:
+        # Move page to archive
+        moved = storage.move_page(page_path, new_path, move_attachments=True)
+
+        if moved:
+            # Update search index
+            search_service = get_search_service()
+            search_service.remove_page(page_path)
+            archived_page = storage.get_page(new_path)
+            if archived_page:
+                search_service.add_page(new_path, archived_page.content)
+
+            # Invalidate caches
+            invalidate_sidebar_cache()
+            from .services.widgets import invalidate_widget_cache
+
+            invalidate_widget_cache()
+
+            # Commit to Git with archive-specific message
+            try:
+                storage.commit_and_push(f"Archive: {page_path}")
+            except Exception as e:
+                logger.warning("Git commit failed for archive: %s", e)
+
+            messages.success(request, f"Page archived to '{new_path}'")
+
+            # Send Teams notification (async, non-blocking)
+            from core.models import dispatch_task
+
+            try:
+                dispatch_task(
+                    "wiki.send_teams_notification",
+                    kwargs={
+                        "operation": "archived",
+                        "page_title": archived_page.title if archived_page else page_path,
+                        "page_path": new_path,
+                    },
+                    initial_logs=f"Sending Teams notification for archive: {page_path}",
+                )
+            except Exception as e:
+                logger.warning("Failed to dispatch Teams notification: %s", e)
+
+            return redirect(reverse("page", kwargs={"page_path": new_path}))
+        else:
+            messages.error(request, "Failed to archive page")
+    except ValueError as e:
+        # Handles case where archive/{path} already exists
+        messages.error(request, str(e))
+
+    return redirect(reverse("page", kwargs={"page_path": page_path}))
+
+
 def search(request):
     """Search wiki pages."""
     query = request.GET.get("q", "").strip()

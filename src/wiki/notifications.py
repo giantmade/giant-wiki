@@ -25,6 +25,7 @@ def build_teams_card(operation: str, page_title: str, page_url: str | None = Non
         "updated": f"Page updated: {page_title}",
         "deleted": f"Page deleted: {page_title}",
         "moved": f"Page moved: {page_title}",
+        "archived": f"Page archived: {page_title}",
     }
 
     message = messages.get(operation, f"Page {operation}: {page_title}")
