@@ -1,6 +1,7 @@
 """URL configuration for giant-wiki."""
 
 from django.urls import path
+from django.views.generic import RedirectView
 
 from wiki import views as wiki_views
 
@@ -8,7 +9,7 @@ from . import views as core_views
 
 urlpatterns = [
     # Homepage redirects to wiki index
-    path("", core_views.home, name="home"),
+    path("", RedirectView.as_view(url="/wiki/index/", permanent=False), name="home"),
     # Health check for Railway
     path("health/", core_views.health, name="health"),
     # Tasks

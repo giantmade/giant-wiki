@@ -586,7 +586,7 @@ class TestViews:
         mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service") as mock_search:
-            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+            with patch("wiki.views.invalidate_wiki_caches") as mock_invalidate:
                 response = client.post("/wiki/newpage/edit/", {"content": "New content"})
 
         assert response.status_code == 302
@@ -612,7 +612,7 @@ class TestViews:
         mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service"):
-            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+            with patch("wiki.views.invalidate_wiki_caches") as mock_invalidate:
                 response = client.post(
                     "/wiki/testpage/edit/",
                     {
@@ -637,7 +637,7 @@ class TestViews:
         mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service"):
-            with patch("wiki.views.invalidate_sidebar_cache") as mock_invalidate:
+            with patch("wiki.views.invalidate_wiki_caches") as mock_invalidate:
                 response = client.post(
                     "/wiki/testpage/edit/",
                     {"content": "Content", "meta_title": "New Title"},
@@ -658,7 +658,7 @@ class TestViews:
         mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service"):
-            with patch("wiki.views.invalidate_sidebar_cache"):
+            with patch("wiki.views.invalidate_wiki_caches"):
                 _response = client.post(
                     "/wiki/testpage/edit/",
                     {
@@ -688,7 +688,7 @@ class TestViews:
         mock_storage.return_value.commit_and_push.return_value = True
 
         with patch("wiki.views.get_search_service"):
-            with patch("wiki.views.invalidate_sidebar_cache"):
+            with patch("wiki.views.invalidate_wiki_caches"):
                 _response = client.post(
                     "/wiki/testpage/edit/",
                     {

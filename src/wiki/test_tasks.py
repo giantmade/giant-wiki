@@ -13,7 +13,6 @@ from wiki.services.search import SearchService
 from wiki.tasks import (
     rebuild_search_index,
     rebuild_search_index_sync,
-    save_and_sync,
     sync_from_remote,
     sync_to_remote,
     warm_sidebar_cache,
@@ -84,211 +83,12 @@ class TestSyncToRemote(TestCase):
             sync_to_remote(task.id, "Test message")
 
 
-class TestSaveAndSync(TestCase):
-    """Tests for save_and_sync task."""
-
-    @patch("wiki.tasks.invalidate_sidebar_cache")
-    @patch("wiki.tasks.get_search_service")
-    @patch("wiki.tasks.get_storage_service")
-    def test_save_and_sync_new_page(self, mock_storage, mock_search, mock_invalidate):
-        """Test saving a new page."""
-        task = Task.objects.create()
-
-        mock_storage_instance = MagicMock()
-        mock_storage_instance.save_page.return_value = (
-            MagicMock(path="test", content="content"),
-            True,  # content_changed
-        )
-        mock_storage_instance.commit_and_push.return_value = True
-        mock_storage.return_value = mock_storage_instance
-
-        mock_search_instance = MagicMock()
-        mock_search.return_value = mock_search_instance
-
-        result = save_and_sync(
-            task.id,
-            page_path="test",
-            content="Test content",
-            is_new_page=True,
-        )
-
-        assert result["saved"] is True
-        assert result["committed"] is True
-        assert result["search_updated"] is True
-        assert result["cache_invalidated"] is True
-
-        mock_storage_instance.save_page.assert_called_once_with("test", "Test content", None)
-        mock_search_instance.add_page.assert_called_once_with("test", "Test content")
-        mock_storage_instance.commit_and_push.assert_called_once_with("Update: test")
-        mock_invalidate.assert_called_once()
-
-    @patch("wiki.tasks.get_search_service")
-    @patch("wiki.tasks.get_storage_service")
-    def test_save_and_sync_no_content_changes(self, mock_storage, mock_search):
-        """Test that task skips commit when content unchanged."""
-        task = Task.objects.create()
-
-        mock_storage_instance = MagicMock()
-        mock_storage_instance.save_page.return_value = (
-            MagicMock(path="test", content="content"),
-            False,  # content_changed = False
-        )
-        mock_storage.return_value = mock_storage_instance
-
-        mock_search_instance = MagicMock()
-        mock_search.return_value = mock_search_instance
-
-        result = save_and_sync(task.id, page_path="test", content="Same content")
-
-        assert result["saved"] is True
-        assert result["committed"] is False  # Should skip commit
-        assert result["search_updated"] is True
-
-        # commit_and_push should NOT be called
-        mock_storage_instance.commit_and_push.assert_not_called()
-
-    @patch("wiki.tasks.invalidate_sidebar_cache")
-    @patch("wiki.tasks.get_search_service")
-    @patch("wiki.tasks.get_storage_service")
-    def test_save_and_sync_with_metadata(self, mock_storage, mock_search, mock_invalidate):
-        """Test saving page with metadata."""
-        task = Task.objects.create()
-
-        mock_storage_instance = MagicMock()
-        mock_storage_instance.save_page.return_value = (
-            MagicMock(path="test", content="content"),
-            True,
-        )
-        mock_storage_instance.commit_and_push.return_value = True
-        mock_storage.return_value = mock_storage_instance
-
-        mock_search_instance = MagicMock()
-        mock_search.return_value = mock_search_instance
-
-        metadata = {"title": "Test Page", "author": "Test"}
-        result = save_and_sync(task.id, page_path="test", content="Content", metadata=metadata)
-
-        assert result["saved"] is True
-        mock_storage_instance.save_page.assert_called_once_with("test", "Content", metadata)
-
-    @patch("wiki.tasks.invalidate_sidebar_cache")
-    @patch("wiki.tasks.get_search_service")
-    @patch("wiki.tasks.get_storage_service")
-    def test_save_and_sync_title_changed_invalidates_cache(self, mock_storage, mock_search, mock_invalidate):
-        """Test that title change invalidates sidebar cache."""
-        task = Task.objects.create()
-
-        mock_storage_instance = MagicMock()
-        mock_storage_instance.save_page.return_value = (
-            MagicMock(path="test", content="content"),
-            True,
-        )
-        mock_storage_instance.commit_and_push.return_value = True
-        mock_storage.return_value = mock_storage_instance
-
-        mock_search_instance = MagicMock()
-        mock_search.return_value = mock_search_instance
-
-        original_metadata = {"title": "Old Title"}
-        new_metadata = {"title": "New Title"}
-
-        result = save_and_sync(
-            task.id,
-            page_path="test",
-            content="Content",
-            metadata=new_metadata,
-            original_metadata=original_metadata,
-            is_new_page=False,
-        )
-
-        assert result["cache_invalidated"] is True
-        mock_invalidate.assert_called_once()
-
-    @patch("wiki.tasks.invalidate_sidebar_cache")
-    @patch("wiki.tasks.get_search_service")
-    @patch("wiki.tasks.get_storage_service")
-    def test_save_and_sync_title_unchanged_no_cache_invalidation(self, mock_storage, mock_search, mock_invalidate):
-        """Test that unchanged title doesn't invalidate cache."""
-        task = Task.objects.create()
-
-        mock_storage_instance = MagicMock()
-        mock_storage_instance.save_page.return_value = (
-            MagicMock(path="test", content="content"),
-            True,
-        )
-        mock_storage_instance.commit_and_push.return_value = True
-        mock_storage.return_value = mock_storage_instance
-
-        mock_search_instance = MagicMock()
-        mock_search.return_value = mock_search_instance
-
-        metadata = {"title": "Same Title"}
-
-        result = save_and_sync(
-            task.id,
-            page_path="test",
-            content="Content",
-            metadata=metadata,
-            original_metadata=metadata,
-            is_new_page=False,
-        )
-
-        assert result["cache_invalidated"] is False
-        mock_invalidate.assert_not_called()
-
-    @patch("wiki.tasks.get_search_service")
-    @patch("wiki.tasks.get_storage_service")
-    def test_save_and_sync_git_push_fails_task_fails(self, mock_storage, mock_search):
-        """Test that Git push failure causes task to fail."""
-        task = Task.objects.create()
-
-        mock_storage_instance = MagicMock()
-        mock_storage_instance.save_page.return_value = (
-            MagicMock(path="test", content="content"),
-            True,
-        )
-        mock_storage_instance.commit_and_push.side_effect = GitOperationError("Push failed")
-        mock_storage.return_value = mock_storage_instance
-
-        mock_search_instance = MagicMock()
-        mock_search.return_value = mock_search_instance
-
-        with pytest.raises(GitOperationError):
-            save_and_sync(task.id, page_path="test", content="Content")
-
-    @patch("wiki.tasks.get_search_service")
-    @patch("wiki.tasks.get_storage_service")
-    def test_save_and_sync_updates_task_logs(self, mock_storage, mock_search):
-        """Test that task logs are updated during execution."""
-        task = Task.objects.create()
-
-        mock_storage_instance = MagicMock()
-        mock_storage_instance.save_page.return_value = (
-            MagicMock(path="test", content="content"),
-            True,
-        )
-        mock_storage_instance.commit_and_push.return_value = True
-        mock_storage.return_value = mock_storage_instance
-
-        mock_search_instance = MagicMock()
-        mock_search.return_value = mock_search_instance
-
-        save_and_sync(task.id, page_path="test", content="Content")
-
-        # Verify task was completed
-        task.refresh_from_db()
-        assert task.status == "success"
-        assert "Saved page: test" in task.logs
-        assert "Updated search index" in task.logs
-        assert "Successfully saved test" in task.logs
-
-
 class TestSyncFromRemote(TestCase):
     """Tests for sync_from_remote task."""
 
     @patch("wiki.tasks.warm_sidebar_cache")
     @patch("core.models.dispatch_task")
-    @patch("wiki.tasks.invalidate_sidebar_cache")
+    @patch("wiki.tasks.invalidate_wiki_caches")
     @patch("wiki.tasks.get_storage_service")
     def test_sync_from_remote_success(self, mock_get_storage, mock_invalidate, mock_dispatch, mock_warm_cache):
         """Test successful sync from remote."""
@@ -306,7 +106,7 @@ class TestSyncFromRemote(TestCase):
         mock_warm_cache.delay.assert_called_once()
 
     @patch("core.models.dispatch_task")
-    @patch("wiki.tasks.invalidate_sidebar_cache")
+    @patch("wiki.tasks.invalidate_wiki_caches")
     @patch("wiki.tasks.get_storage_service")
     def test_sync_from_remote_no_remote(self, mock_get_storage, mock_invalidate, mock_dispatch):
         """Test sync when no remote is configured."""
@@ -324,7 +124,7 @@ class TestSyncFromRemote(TestCase):
         mock_invalidate.assert_not_called()
 
     @patch("core.models.dispatch_task")
-    @patch("wiki.tasks.invalidate_sidebar_cache")
+    @patch("wiki.tasks.invalidate_wiki_caches")
     @patch("wiki.tasks.get_storage_service")
     def test_sync_from_remote_triggers_rebuild(self, mock_get_storage, mock_invalidate, mock_dispatch):
         """Test that successful pull triggers search index rebuild."""
@@ -338,7 +138,7 @@ class TestSyncFromRemote(TestCase):
         mock_dispatch.assert_called_once()
 
     @patch("core.models.dispatch_task")
-    @patch("wiki.tasks.invalidate_sidebar_cache")
+    @patch("wiki.tasks.invalidate_wiki_caches")
     @patch("wiki.tasks.get_storage_service")
     def test_sync_from_remote_invalidates_cache(self, mock_get_storage, mock_invalidate, mock_dispatch):
         """Test that successful pull invalidates sidebar cache."""

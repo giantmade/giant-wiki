@@ -20,11 +20,7 @@ STALE_MAX_DAYS = 365  # Already outdated
 
 
 def get_recently_updated(limit=8) -> list[dict]:
-    """Get most recently updated pages.
-
-    Returns:
-        List of dicts with keys: path, title, date
-    """
+    """Return most recently updated pages from cache."""
     # Check cache first
     cached = cache.get(WIDGETS_RECENTLY_UPDATED_KEY)
     if cached is not None:
@@ -49,11 +45,7 @@ def get_recently_updated(limit=8) -> list[dict]:
 
 
 def get_recently_stale(limit=8) -> list[dict]:
-    """Get pages approaching stale status (270-365 days old).
-
-    Returns:
-        List of dicts with keys: path, title, date
-    """
+    """Return pages approaching stale status (270-365 days) from cache."""
     # Check cache first
     cached = cache.get(WIDGETS_RECENTLY_STALE_KEY)
     if cached is not None:

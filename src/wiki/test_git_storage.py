@@ -20,6 +20,7 @@ from wiki.services.git_storage import (
     get_storage_service,
     reset_storage_service,
     validate_commit_message,
+    validate_path,
 )
 
 
@@ -54,6 +55,90 @@ class TestValidateCommitMessage:
         """Should strip leading/trailing whitespace."""
         assert validate_commit_message("  test  ") == "test"
         assert validate_commit_message("\n\ntest\n\n") == "test"
+
+
+class TestValidatePath:
+    """Tests for path validation."""
+
+    def test_valid_path(self):
+        """Valid paths should pass through."""
+        assert validate_path("test") == "test"
+        assert validate_path("docs/guide") == "docs/guide"
+        assert validate_path("guides/setup/installation") == "guides/setup/installation"
+
+    def test_strips_leading_trailing_slashes(self):
+        """Should strip leading and trailing slashes."""
+        assert validate_path("/test/") == "test"
+        assert validate_path("//test//") == "test"
+
+    def test_empty_path_raises(self):
+        """Empty path should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="cannot be empty"):
+            validate_path("")
+
+    def test_directory_traversal_raises(self):
+        """Path with .. should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="cannot contain '..'"):
+            validate_path("../etc/passwd")
+        with pytest.raises(InvalidPathError, match="cannot contain '..'"):
+            validate_path("test/../etc")
+
+    def test_absolute_path_raises(self):
+        """Absolute path should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="cannot be absolute"):
+            validate_path("/etc/passwd")
+
+    def test_null_byte_raises(self):
+        """Path with null byte should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="cannot contain null bytes"):
+            validate_path("test\x00page")
+
+    def test_shell_metacharacter_dollar_raises(self):
+        """Path with $ should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: \\$"):
+            validate_path("test$page")
+
+    def test_shell_metacharacter_backtick_raises(self):
+        """Path with backtick should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: `"):
+            validate_path("test`whoami`")
+
+    def test_shell_metacharacter_semicolon_raises(self):
+        """Path with semicolon should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: ;"):
+            validate_path("test;ls")
+
+    def test_shell_metacharacter_pipe_raises(self):
+        """Path with pipe should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: \\|"):
+            validate_path("test|grep")
+
+    def test_shell_metacharacter_ampersand_raises(self):
+        """Path with ampersand should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: &"):
+            validate_path("test&background")
+
+    def test_shell_metacharacter_redirect_raises(self):
+        """Path with redirect operators should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: <"):
+            validate_path("test<input")
+        with pytest.raises(InvalidPathError, match="shell metacharacter: >"):
+            validate_path("test>output")
+
+    def test_shell_metacharacter_parens_raises(self):
+        """Path with parentheses should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: \\("):
+            validate_path("test(subshell)")
+
+    def test_shell_metacharacter_braces_raises(self):
+        """Path with braces should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: \\{"):
+            validate_path("test{expansion}")
+
+    def test_shell_metacharacter_exclamation_raises(self):
+        """Path with exclamation should raise InvalidPathError."""
+        with pytest.raises(InvalidPathError, match="shell metacharacter: !"):
+            validate_path("test!history")
 
 
 class TestWikiPageProperties:

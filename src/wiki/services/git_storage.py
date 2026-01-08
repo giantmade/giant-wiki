@@ -32,6 +32,10 @@ def validate_path(path: str) -> str:
     if not path:
         raise InvalidPathError("Path cannot be empty")
 
+    # Check for absolute paths (before normalization)
+    if path.startswith("/"):
+        raise InvalidPathError("Path cannot be absolute")
+
     # Normalize the path
     path = path.strip("/")
 
@@ -39,13 +43,15 @@ def validate_path(path: str) -> str:
     if ".." in path:
         raise InvalidPathError("Path cannot contain '..'")
 
-    # Check for absolute paths
-    if path.startswith("/"):
-        raise InvalidPathError("Path cannot be absolute")
-
     # Check for null bytes
     if "\x00" in path:
         raise InvalidPathError("Path cannot contain null bytes")
+
+    # Prevent shell metacharacters (defense-in-depth for git commands)
+    dangerous_chars = ["$", "`", ";", "|", "&", "<", ">", "(", ")", "{", "}", "!"]
+    for char in dangerous_chars:
+        if char in path:
+            raise InvalidPathError(f"Path cannot contain shell metacharacter: {char}")
 
     return path
 
@@ -484,18 +490,7 @@ class GitStorageService:
         return [f.name for f in attachments_dir.iterdir() if f.is_file()]
 
     def commit_and_push(self, message: str) -> bool:
-        """Commit all changes and push to remote.
-
-        Args:
-            message: The commit message
-
-        Returns:
-            True if changes were committed/pushed, False if nothing to commit
-
-        Raises:
-            GitOperationError: If git commands fail
-            ValueError: If message is invalid
-        """
+        """Commit all changes and push to remote if configured."""
         message = validate_commit_message(message)
 
         try:
