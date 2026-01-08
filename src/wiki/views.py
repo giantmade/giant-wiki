@@ -87,6 +87,7 @@ def page(request, page_path: str = "index"):
     context = {
         "page": wiki_page,
         "page_html": page_html,
+        "is_archived": page_path.startswith("archive/"),
     }
 
     # Add widget data only for index page
@@ -420,6 +421,124 @@ def archive(request, page_path: str):
         messages.error(request, str(e))
 
     return redirect(reverse("page", kwargs={"page_path": page_path}))
+
+
+def archive_list(request):
+    """Display list of all archived pages."""
+    storage = get_storage_service()
+
+    # Get all pages from sidebar cache (includes all pages)
+    from .services.sidebar import _get_page_titles
+
+    all_page_titles = _get_page_titles(storage)
+
+    # Filter to only archived pages
+    archived_pages = []
+    for path in all_page_titles.keys():
+        if path.startswith("archive/"):
+            try:
+                page = storage.get_page(path)
+                archived_pages.append(
+                    {
+                        "path": path,
+                        "title": page.title if page else path,
+                        "original_path": path.removeprefix("archive/"),
+                        "last_modified": page.metadata.get("last_updated") if page else None,
+                    }
+                )
+            except Exception as e:
+                logger.warning(f"Error loading archived page {path}: {e}")
+                continue
+
+    # Sort by most recently modified first
+    archived_pages.sort(key=lambda x: x["last_modified"] or "", reverse=True)
+
+    return render(
+        request,
+        "wiki/archive.html",
+        {
+            "archived_pages": archived_pages,
+            "count": len(archived_pages),
+        },
+    )
+
+
+def restore(request, page_path: str):
+    """Restore an archived page to its original location."""
+    from django.http import HttpResponseNotAllowed
+
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
+
+    storage = get_storage_service()
+
+    try:
+        wiki_page = storage.get_page(page_path)
+    except InvalidPathError:
+        return HttpResponseNotFound("Invalid page path")
+
+    if not wiki_page:
+        messages.error(request, "Page not found")
+        return redirect(reverse("archive_list"))
+
+    # Check if page is actually archived
+    if not page_path.startswith("archive/"):
+        messages.error(request, "Page is not archived")
+        return redirect(reverse("page", kwargs={"page_path": page_path}))
+
+    # Calculate restore destination (remove archive/ prefix)
+    new_path = page_path.removeprefix("archive/")
+
+    try:
+        # Move page back from archive
+        moved = storage.move_page(page_path, new_path, move_attachments=True)
+
+        if moved:
+            # Update search index
+            search_service = get_search_service()
+            search_service.remove_page(page_path)
+            restored_page = storage.get_page(new_path)
+            if restored_page:
+                search_service.add_page(new_path, restored_page.content)
+
+            # Invalidate caches
+            invalidate_sidebar_cache()
+            from .services.widgets import invalidate_widget_cache
+
+            invalidate_widget_cache()
+
+            # Commit to Git with restore-specific message
+            try:
+                storage.commit_and_push(f"Restore: {new_path}")
+            except Exception as e:
+                logger.warning("Git commit failed for restore: %s", e)
+
+            messages.success(request, f"Page restored to '{new_path}'")
+
+            # Send Teams notification (async, non-blocking)
+            from core.models import dispatch_task
+
+            try:
+                dispatch_task(
+                    "wiki.send_teams_notification",
+                    kwargs={
+                        "operation": "updated",  # Use "updated" for restored pages
+                        "page_title": restored_page.title if restored_page else new_path,
+                        "page_path": new_path,
+                    },
+                    initial_logs=f"Sending Teams notification for restore: {page_path}",
+                )
+            except Exception as e:
+                logger.warning("Failed to dispatch Teams notification: %s", e)
+
+            return redirect(reverse("page", kwargs={"page_path": new_path}))
+        else:
+            messages.error(request, "Failed to restore page")
+    except ValueError as e:
+        # Handles case where destination path already exists
+        messages.error(request, str(e))
+
+    return redirect(reverse("archive_list"))
 
 
 def search(request):

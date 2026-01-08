@@ -150,20 +150,63 @@ All wiki pages have CRUD buttons in the header for page management:
 - Invalidates caches
 - Commits with message "Archive: {page_path}"
 - Prevents double-archiving (pages already in archive/)
-- Note: Archived pages remain accessible and visible in sidebar
+- Note: Archived pages are hidden from sidebar navigation but remain accessible via direct URL and Archive list
+
+**Restore Pages:**
+- "Restore" button appears in place of Archive button when viewing archived pages
+- Also available in Archive list view with restore buttons for each page
+- Automatically removes `archive/` prefix to restore to original location
+- Moves attachments back with page
+- Updates search index (removes archived path, adds restored path)
+- Invalidates caches
+- Commits with message "Restore: {page_path}"
+- Redirects to restored page location
+- Cannot restore non-archived pages (validation check)
 
 **Button Styling:**
 - All buttons use subtle gray backgrounds (`bg-gray-100 hover:bg-gray-200`)
-- Differentiated by text and icon colors: blue (New), gray (Move), green (Edit), amber (Archive), red (Delete)
+- Differentiated by text and icon colors: blue (New/Restore), gray (Move), green (Edit), amber (Archive), red (Delete)
 - Maintains accessibility with proper focus rings
 
-**Button Order:** [New Page] [Move] [Edit] [Archive] [Delete]
+**Button Order:**
+- Normal pages: [New Page] [Move] [Edit] [Archive] [Delete]
+- Archived pages: [New Page] [Move] [Edit] [Restore] [Delete]
 
 **Implementation:**
-- Views: `delete()`, `move()`, `archive()` in `src/wiki/views.py`
+- Views: `delete()`, `move()`, `archive()`, `restore()`, `archive_list()` in `src/wiki/views.py`
 - Service methods: `delete_page()`, `move_page()` in `src/wiki/services/git_storage.py`
-- URL patterns: `/wiki/<path>/delete/`, `/wiki/<path>/move/`, `/wiki/<path>/archive/`
-- Template: `src/core/templates/wiki/page.html` (Alpine.js modals)
+- URL patterns: `/wiki/<path>/delete/`, `/wiki/<path>/move/`, `/wiki/<path>/archive/`, `/wiki/<path>/restore/`, `/wiki/archive/`
+- Template: `src/core/templates/wiki/page.html` (Alpine.js modals, conditional button display)
+
+### Archive Management
+
+The wiki provides a dedicated archive system for managing archived pages:
+
+**Archive List View:**
+- Accessible via "Archive" link in System section of sidebar (below History and Tasks)
+- URL: `/wiki/archive/`
+- Shows table of all archived pages with:
+  - Page title (linked to view archived page)
+  - Original path (where page came from)
+  - Date archived (from last_updated metadata)
+  - Restore button for each page
+- Empty state message when no archived pages exist
+- Sorted by most recently archived first
+
+**Sidebar Behavior:**
+- Archived pages (starting with `archive/`) are filtered from sidebar navigation
+- Prevents clutter in main navigation categories
+- Archive pages remain fully accessible via:
+  - Direct URL navigation
+  - Archive list view
+  - Search results (if not filtered)
+- Filtering done in `_build_sidebar_structure()` in `src/wiki/services/sidebar.py`
+
+**Implementation:**
+- View: `archive_list()` in `src/wiki/views.py` (lines 425-463)
+- Template: `src/core/templates/wiki/archive.html`
+- Sidebar filter: `src/wiki/services/sidebar.py` (line 78)
+- System section link: `src/core/templates/base.html` (lines 219-225)
 
 ### GitHub Source Link
 
@@ -224,12 +267,13 @@ The sidebar uses a two-tier caching strategy in Redis for fast access:
 
 - **Page titles cache:** Maps page paths to frontmatter titles (raw data)
 - **Structure cache:** Pre-built category hierarchy with sorted items (99% of work done)
+- **Filtering:** Excludes special pages (`Sidebar`) and archived pages (starting with `archive/`) from navigation
 - **Startup:** Both caches warmed via `warm_sidebar_cache` Celery task
 - **TTL:** 30 minutes (configurable via `SIDEBAR_CACHE_TTL`)
 - **Git sync:** Caches re-warmed automatically after pulling changes
 - **Performance:** ~5-10ms per request (structure cache hit) vs ~7000ms (cold)
 
-Implementation: `src/wiki/services/sidebar.py` (two cache keys) and `src/wiki/tasks.py` (cache warming).
+Implementation: `src/wiki/services/sidebar.py` (two cache keys, filtering on line 78) and `src/wiki/tasks.py` (cache warming).
 
 ## Task Monitoring
 
@@ -249,7 +293,7 @@ The wiki includes a web UI for monitoring Celery background tasks at `/tasks/`.
 - **Tasks List:** Paginated table showing all tasks with status, type, name, creation time, and duration
 - **Status Badges:** Color-coded badges (queued, in_progress, success, completed_with_errors, failed, cancelled)
 - **Detail View:** Real-time task monitoring with auto-refresh, logs, progress tracking, and audit trail
-- **Navigation:** Accessible via sidebar footer link (History | Tasks)
+- **Navigation:** Accessible via sidebar System section (History | Tasks | Archive)
 
 ### Implementation
 
@@ -276,6 +320,7 @@ The wiki can send notifications to Microsoft Teams when pages are created, edite
 - **Delete**: "Page deleted: [Page Title]" (no link)
 - **Move**: "Page moved: [Page Title]" with link to new location
 - **Archive**: "Page archived: [Page Title]" with link to archived location
+- **Restore**: Sends "Page updated: [Page Title]" notification (uses "updated" operation type)
 
 ### Implementation
 

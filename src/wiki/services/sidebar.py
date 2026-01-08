@@ -73,9 +73,9 @@ def _build_sidebar_structure(page_titles: dict[str, str]) -> list[SidebarCategor
     This is the expensive operation that should be cached.
     All items have is_current=False and is_expanded=False.
     """
-    # Exclude special pages
+    # Exclude special pages and archive folder
     excluded = {"Sidebar"}
-    pages = [p for p in page_titles.keys() if p not in excluded]
+    pages = [p for p in page_titles.keys() if p not in excluded and not p.startswith("archive/")]
 
     # Group by category
     categories: dict[str, list[tuple[str, str]]] = {}
