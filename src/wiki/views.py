@@ -122,20 +122,6 @@ def edit(request, page_path: str):
         wiki_page = WikiPage(path=page_path, content="")
 
     if request.method == "POST":
-        # DIAGNOSTIC: Log all headers to check for Tailscale identity
-        logger.info("=== REQUEST HEADERS ===")
-        for header, value in request.META.items():
-            if header.startswith("HTTP_"):
-                logger.info(f"{header}: {value}")
-
-        # Specifically check for Tailscale headers
-        tailscale_headers = {
-            "HTTP_TAILSCALE_USER_LOGIN": request.META.get("HTTP_TAILSCALE_USER_LOGIN"),
-            "HTTP_TAILSCALE_USER_NAME": request.META.get("HTTP_TAILSCALE_USER_NAME"),
-            "HTTP_TAILSCALE_USER_PROFILE_PIC": request.META.get("HTTP_TAILSCALE_USER_PROFILE_PIC"),
-        }
-        logger.info(f"Tailscale headers: {tailscale_headers}")
-
         content = request.POST.get("content", "")
 
         # Reconstruct metadata from form fields
