@@ -10,9 +10,9 @@ from django.urls import reverse
 from markdown import markdown
 from markdown.extensions.wikilinks import WikiLinkExtension
 
+from .services.cache import invalidate_wiki_caches
 from .services.git_storage import InvalidPathError, WikiPage, get_storage_service
 from .services.search import get_search_service
-from .services.sidebar import invalidate_sidebar_cache
 
 logger = logging.getLogger(__name__)
 
@@ -62,16 +62,10 @@ def parse_metadata_value(form_value: str, original_value):
 
 def page(request, page_path: str = "index"):
     """Display a wiki page."""
-    import time
-
-    start_time = time.time()
     storage = get_storage_service()
 
     try:
-        get_page_start = time.time()
         wiki_page = storage.get_page(page_path)
-        get_page_time = time.time() - get_page_start
-        logger.info(f"storage.get_page({page_path}) took {get_page_time:.3f}s")
     except InvalidPathError:
         return HttpResponseNotFound("Invalid page path")
 
@@ -79,10 +73,7 @@ def page(request, page_path: str = "index"):
     if not wiki_page:
         return redirect(reverse("edit", kwargs={"page_path": page_path}))
 
-    markdown_start = time.time()
     page_html = render_markdown(wiki_page.content)
-    markdown_time = time.time() - markdown_start
-    logger.info(f"render_markdown took {markdown_time:.3f}s")
 
     context = {
         "page": wiki_page,
@@ -97,13 +88,7 @@ def page(request, page_path: str = "index"):
         context["recently_updated"] = get_recently_updated(limit=8)
         context["recently_stale"] = get_recently_stale(limit=8)
 
-    render_start = time.time()
-    response = render(request, "wiki/page.html", context)
-    render_time = time.time() - render_start
-    total_time = time.time() - start_time
-    logger.info(f"template render took {render_time:.3f}s, total view time {total_time:.3f}s")
-
-    return response
+    return render(request, "wiki/page.html", context)
 
 
 def edit(request, page_path: str):
@@ -155,11 +140,7 @@ def edit(request, page_path: str):
                     should_invalidate_cache = True
 
             if should_invalidate_cache:
-                invalidate_sidebar_cache()
-                # Invalidate widget cache when page metadata changes
-                from .services.widgets import invalidate_widget_cache
-
-                invalidate_widget_cache()
+                invalidate_wiki_caches()
 
             # Commit and push to Git (synchronous)
             try:
@@ -234,10 +215,7 @@ def delete(request, page_path: str):
         search_service.remove_page(page_path)
 
         # Invalidate caches
-        invalidate_sidebar_cache()
-        from .services.widgets import invalidate_widget_cache
-
-        invalidate_widget_cache()
+        invalidate_wiki_caches()
 
         # Commit to Git
         try:
@@ -305,10 +283,7 @@ def move(request, page_path: str):
                 search_service.add_page(new_path, new_page.content)
 
             # Invalidate caches
-            invalidate_sidebar_cache()
-            from .services.widgets import invalidate_widget_cache
-
-            invalidate_widget_cache()
+            invalidate_wiki_caches()
 
             # Commit to Git
             try:
@@ -384,10 +359,7 @@ def archive(request, page_path: str):
                 search_service.add_page(new_path, archived_page.content)
 
             # Invalidate caches
-            invalidate_sidebar_cache()
-            from .services.widgets import invalidate_widget_cache
-
-            invalidate_widget_cache()
+            invalidate_wiki_caches()
 
             # Commit to Git with archive-specific message
             try:
@@ -416,8 +388,9 @@ def archive(request, page_path: str):
             return redirect(reverse("page", kwargs={"page_path": new_path}))
         else:
             messages.error(request, "Failed to archive page")
+    except InvalidPathError as e:
+        messages.error(request, f"Invalid path: {e}")
     except ValueError as e:
-        # Handles case where archive/{path} already exists
         messages.error(request, str(e))
 
     return redirect(reverse("page", kwargs={"page_path": page_path}))
@@ -425,12 +398,12 @@ def archive(request, page_path: str):
 
 def archive_list(request):
     """Display list of all archived pages."""
-    storage = get_storage_service()
-
-    # Get all pages from sidebar cache (includes all pages)
     from .services.sidebar import _get_page_titles
 
-    all_page_titles = _get_page_titles(storage)
+    # Get all pages from sidebar cache (includes all pages)
+    all_page_titles = _get_page_titles()
+
+    storage = get_storage_service()
 
     # Filter to only archived pages
     archived_pages = []
@@ -502,10 +475,7 @@ def restore(request, page_path: str):
                 search_service.add_page(new_path, restored_page.content)
 
             # Invalidate caches
-            invalidate_sidebar_cache()
-            from .services.widgets import invalidate_widget_cache
-
-            invalidate_widget_cache()
+            invalidate_wiki_caches()
 
             # Commit to Git with restore-specific message
             try:
@@ -534,8 +504,9 @@ def restore(request, page_path: str):
             return redirect(reverse("page", kwargs={"page_path": new_path}))
         else:
             messages.error(request, "Failed to restore page")
+    except InvalidPathError as e:
+        messages.error(request, f"Invalid path: {e}")
     except ValueError as e:
-        # Handles case where destination path already exists
         messages.error(request, str(e))
 
     return redirect(reverse("archive_list"))
