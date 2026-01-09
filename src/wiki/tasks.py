@@ -1,7 +1,6 @@
 """Celery tasks for wiki operations."""
 
 import logging
-from datetime import datetime
 
 from celery import shared_task
 
