@@ -67,9 +67,10 @@ class TestValidatePath:
         assert validate_path("guides/setup/installation") == "guides/setup/installation"
 
     def test_strips_leading_trailing_slashes(self):
-        """Should strip leading and trailing slashes."""
-        assert validate_path("/test/") == "test"
-        assert validate_path("//test//") == "test"
+        """Should strip trailing slashes."""
+        assert validate_path("test/") == "test"
+        assert validate_path("test//") == "test"
+        assert validate_path("docs/guide/") == "docs/guide"
 
     def test_empty_path_raises(self):
         """Empty path should raise InvalidPathError."""

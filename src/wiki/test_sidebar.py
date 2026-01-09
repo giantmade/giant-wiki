@@ -64,7 +64,7 @@ class TestBuildSidebarStructure:
 
         categories = _build_sidebar_structure(pages)
 
-        assert categories[0]["name"] == "General"
+        assert categories[0].name == "General"
 
     def test_archived_pages_excluded(self):
         """Verify pages starting with 'archive/' are filtered out."""
@@ -75,7 +75,7 @@ class TestBuildSidebarStructure:
         # Flatten all items from all categories
         all_paths = []
         for category in categories:
-            all_paths.extend([item["path"] for item in category["items"]])
+            all_paths.extend([item.path for item in category.items])
 
         assert "archive/old" not in all_paths
         assert "test" in all_paths
@@ -92,43 +92,31 @@ class TestBuildSidebarStructure:
 
         categories = _build_sidebar_structure(pages)
 
-        category_names = [c["name"] for c in categories]
+        category_names = [c.name for c in categories]
         assert "General" in category_names
         assert "Docs" in category_names
         assert "Guides" in category_names
 
-    def test_current_page_marked(self):
-        """Verify current page has is_current=True."""
+    def test_all_items_not_current(self):
+        """Verify all items have is_current=False (current marking done at higher level)."""
         pages = {"test": "Test", "docs/guide": "Guide"}
 
-        categories = _build_sidebar_structure(pages, current_path="test")
+        categories = _build_sidebar_structure(pages)
 
-        # Find the test page item
-        test_item = None
+        # Check all items are not marked as current
         for category in categories:
-            for item in category["items"]:
-                if item["path"] == "test":
-                    test_item = item
-                    break
+            for item in category.items:
+                assert item.is_current is False
 
-        assert test_item is not None
-        assert test_item["is_current"] is True
-
-    def test_current_category_expanded(self):
-        """Verify category containing current page is expanded."""
+    def test_all_categories_not_expanded(self):
+        """Verify all categories have is_expanded=False (expansion done at higher level)."""
         pages = {"test": "Test", "docs/guide": "Guide", "docs/setup": "Setup"}
 
-        categories = _build_sidebar_structure(pages, current_path="docs/guide")
+        categories = _build_sidebar_structure(pages)
 
-        # Find Docs category
-        docs_category = None
+        # Check all categories are not expanded
         for category in categories:
-            if category["name"] == "Docs":
-                docs_category = category
-                break
-
-        assert docs_category is not None
-        assert docs_category["is_expanded"] is True
+            assert category.is_expanded is False
 
 
 class TestGetSidebarCategories:
@@ -143,8 +131,8 @@ class TestGetSidebarCategories:
 
         assert isinstance(categories, list)
         assert len(categories) > 0
-        assert "name" in categories[0]
-        assert "items" in categories[0]
+        assert hasattr(categories[0], "name")
+        assert hasattr(categories[0], "items")
 
     @patch("wiki.services.sidebar._get_page_titles")
     def test_caches_structure(self, mock_get_titles):
@@ -171,11 +159,11 @@ class TestGetSidebarCategories:
         # Find test page
         test_item = None
         for category in categories:
-            for item in category["items"]:
-                if item["path"] == "test":
+            for item in category.items:
+                if item.path == "test":
                     test_item = item
 
-        assert test_item["is_current"] is True
+        assert test_item.is_current is True
 
 
 class TestInvalidateSidebarCache:

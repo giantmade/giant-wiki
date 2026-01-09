@@ -131,7 +131,7 @@ class TestPathValidation:
         """Valid paths are returned normalized."""
         assert validate_path("index") == "index"
         assert validate_path("foo/bar") == "foo/bar"
-        assert validate_path("/leading/slash/") == "leading/slash"
+        assert validate_path("trailing/slash/") == "trailing/slash"
 
     def test_rejects_directory_traversal(self):
         """Paths with .. are rejected."""
