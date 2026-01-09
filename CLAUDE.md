@@ -113,6 +113,59 @@ last_updated: 2026-01-06 16:56:00.736849
 
 Implementation: `src/wiki/services/git_storage.py` (SYSTEM_MANAGED_FIELDS constant)
 
+### Mermaid Diagrams
+
+Wiki pages support Mermaid diagrams for creating flowcharts, sequence diagrams, and other visualizations.
+
+**Usage:**
+````markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action]
+    B -->|No| D[End]
+```
+````
+
+**Supported Diagram Types:**
+- `graph` / `flowchart` - Flowcharts and node diagrams
+- `sequenceDiagram` - Sequence diagrams for interactions
+- `classDiagram` - UML class diagrams
+- `stateDiagram` - State machines
+- `erDiagram` - Entity relationship diagrams
+- `journey` - User journey maps
+- `gantt` - Gantt charts for timelines
+- `pie` - Pie charts
+- `gitGraph` - Git branching visualizations
+
+**Implementation:**
+- Rendering: Client-side via Mermaid.js v11 (CDN)
+- Extension: Custom preprocessor in `src/wiki/markdown_extensions.py`
+- Styling: White cards with responsive scaling and centered content
+- Location: Diagrams render in place within markdown content
+
+**Example - Sequence Diagram:**
+````markdown
+```mermaid
+sequenceDiagram
+    User->>Wiki: Request page
+    Wiki->>Git: Fetch markdown
+    Git-->>Wiki: Return content
+    Wiki-->>User: Render HTML
+```
+````
+
+**Example - Pie Chart:**
+````markdown
+```mermaid
+pie title Team Distribution
+    "Engineering" : 45
+    "Design" : 20
+    "Product" : 15
+    "Marketing" : 20
+```
+````
+
 ## Page Features
 
 ### CRUD Operations

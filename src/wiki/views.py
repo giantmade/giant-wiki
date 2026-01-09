@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 
 def render_markdown(content: str) -> str:
     """Render markdown content to HTML."""
+    from .markdown_extensions import MermaidExtension
+
     return markdown(
         content,
         extensions=[
@@ -27,6 +29,7 @@ def render_markdown(content: str) -> str:
             "tables",
             "toc",
             WikiLinkExtension(base_url="/wiki/"),
+            MermaidExtension(),
         ],
     )
 

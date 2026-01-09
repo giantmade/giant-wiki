@@ -35,6 +35,17 @@
             integrity="sha384-l8f0VcPi/M1iHPv8egOnY/15TDwqgbOR1anMIJWvU6nLRgZVLTLSaNqi/TOoT5Fh"
             crossorigin="anonymous"></script>
 
+    <!-- Mermaid.js for diagram rendering -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            fontFamily: 'Inter, sans-serif'
+        });
+    </script>
+
     <!-- Custom styles -->
     <style>
         /* Markdown content styles */
@@ -56,6 +67,25 @@
         .prose th, .prose td { border: 1px solid #e5e7eb; padding: 0.5rem 1rem; text-align: left; }
         .prose th { background: #f9fafb; font-weight: 500; }
         .prose mark { background: #fef08a; padding: 0 0.125rem; }
+
+        /* Mermaid diagram styles */
+        .prose .mermaid {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Ensure Mermaid SVGs scale properly */
+        .prose .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
 
         /* Sidebar markdown */
         .sidebar-content a { color: #d1d5db; }
