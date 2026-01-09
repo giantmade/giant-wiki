@@ -307,9 +307,13 @@ Content here"""
 class TestWarmSidebarCache(TestCase):
     """Tests for warm_sidebar_cache task."""
 
+    @patch("wiki.services.widgets.get_recently_stale")
+    @patch("wiki.services.widgets.get_recently_updated")
     @patch("django.core.cache.cache.set")
     @patch("wiki.services.git_storage.get_storage_service")
-    def test_warm_sidebar_cache_populates_redis(self, mock_get_storage, mock_cache_set):
+    def test_warm_sidebar_cache_populates_redis(
+        self, mock_get_storage, mock_cache_set, mock_get_updated, mock_get_stale
+    ):
         """Test that cache warming populates Redis with page titles and structure."""
         mock_service = MagicMock()
         mock_service.get_page_titles.return_value = {
@@ -318,6 +322,8 @@ class TestWarmSidebarCache(TestCase):
             "page3": "Page 3",
         }
         mock_get_storage.return_value = mock_service
+        mock_get_updated.return_value = []
+        mock_get_stale.return_value = []
 
         count = warm_sidebar_cache()
 
@@ -332,14 +338,21 @@ class TestWarmSidebarCache(TestCase):
         assert calls[0][0][2] == 1800  # 30 minutes
         assert calls[1][0][0] == "wiki_sidebar_structure"
         assert calls[1][0][2] == 1800  # 30 minutes
+        # Verify widget cache warming was called
+        mock_get_updated.assert_called_once()
+        mock_get_stale.assert_called_once()
 
+    @patch("wiki.services.widgets.get_recently_stale")
+    @patch("wiki.services.widgets.get_recently_updated")
     @patch("django.core.cache.cache.set")
     @patch("wiki.services.git_storage.get_storage_service")
-    def test_warm_sidebar_cache_empty_repo(self, mock_get_storage, mock_cache_set):
+    def test_warm_sidebar_cache_empty_repo(self, mock_get_storage, mock_cache_set, mock_get_updated, mock_get_stale):
         """Test cache warming with empty repository."""
         mock_service = MagicMock()
         mock_service.get_page_titles.return_value = {}
         mock_get_storage.return_value = mock_service
+        mock_get_updated.return_value = []
+        mock_get_stale.return_value = []
 
         count = warm_sidebar_cache()
 
@@ -347,13 +360,17 @@ class TestWarmSidebarCache(TestCase):
         # Should call cache.set twice: once for titles, once for structure
         assert mock_cache_set.call_count == 2
 
+    @patch("wiki.services.widgets.get_recently_stale")
+    @patch("wiki.services.widgets.get_recently_updated")
     @patch("django.core.cache.cache.set")
     @patch("wiki.services.git_storage.get_storage_service")
-    def test_warm_sidebar_cache_returns_count(self, mock_get_storage, mock_cache_set):
+    def test_warm_sidebar_cache_returns_count(self, mock_get_storage, mock_cache_set, mock_get_updated, mock_get_stale):
         """Test that warm_sidebar_cache returns the number of pages cached."""
         mock_service = MagicMock()
         mock_service.get_page_titles.return_value = {"page1": "Page 1", "page2": "Page 2"}
         mock_get_storage.return_value = mock_service
+        mock_get_updated.return_value = []
+        mock_get_stale.return_value = []
 
         count = warm_sidebar_cache()
 

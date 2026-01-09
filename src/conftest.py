@@ -1,6 +1,14 @@
 """Global pytest fixtures."""
 
 import pytest
+from django.conf import settings
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_directories():
+    """Create necessary directories for tests."""
+    # Create static directory to prevent warnings
+    settings.STATIC_ROOT.mkdir(parents=True, exist_ok=True)
 
 
 @pytest.fixture

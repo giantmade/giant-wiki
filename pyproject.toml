@@ -38,6 +38,8 @@ DJANGO_SETTINGS_MODULE = "core.settings"
 python_files = ["test_*.py", "*_test.py"]
 testpaths = ["src"]
 addopts = "-ra -q"
+log_cli_level = "WARNING"
+log_level = "WARNING"
 
 [tool.ruff]
 line-length = 120
