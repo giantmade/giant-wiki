@@ -13,7 +13,7 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 # System-managed metadata fields that should not be user-editable
-SYSTEM_MANAGED_FIELDS = {"last_updated"}
+SYSTEM_MANAGED_FIELDS = {"last_updated", "last_edited_by"}
 
 
 class InvalidPathError(ValueError):

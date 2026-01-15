@@ -128,6 +128,11 @@ def edit(request, page_path: str):
                     # Preserve original if not in form
                     metadata[key] = original_value
 
+        # Add author name from cookie (system-managed field)
+        author_name = request.COOKIES.get("wiki_author_name")
+        if author_name:
+            metadata["last_edited_by"] = author_name
+
         try:
             # Save file to repository
             storage.save_page(page_path, content, metadata if metadata else None)

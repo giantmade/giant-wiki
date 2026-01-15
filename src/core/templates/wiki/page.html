@@ -11,7 +11,7 @@
             <h1 class="text-2xl font-light text-gray-900">{{ page.title }}</h1>
             {% if page.last_modified %}
             <p class="text-sm text-gray-500 mt-1">
-                Last updated: {{ page.last_modified|date:"M d, Y H:i" }}
+                Last updated: {{ page.last_modified|date:"M d, Y H:i" }}{% if page.metadata.last_edited_by %} by {{ page.metadata.last_edited_by }}{% endif %}
             </p>
             {% endif %}
         </div>
