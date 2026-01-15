@@ -9,6 +9,7 @@ Internal documentation wiki with Git-based storage, deployed privately via Tails
 - **Background sync** - Celery tasks sync changes to Git remote
 - **Mermaid diagrams** - Support for flowcharts, sequence diagrams, and other visualizations
 - **Teams notifications** - Optional notifications to Microsoft Teams when pages are created, edited, moved, or deleted
+- **Edit attribution** - Cookie-based user identity tracking for page edits
 - **Private access** - Tailscale boundary, no authentication required
 - **Modern UI** - Tailwind CSS with Giant Tool Design System
 

@@ -103,8 +103,15 @@ last_updated: 2026-01-06 16:56:00.736849
 
 **System-Managed Fields:**
 - `last_updated` - Automatically set on every save (format: `YYYY-MM-DD HH:MM:SS.ffffff`)
-- Only updated when content or user metadata actually changes
-- Not editable by users (excluded from edit form)
+- `last_edited_by` - Name of the user who last edited the page (from cookie)
+- System fields are not editable by users (excluded from edit form)
+
+**User Identity:**
+- On first save, a modal prompts for the user's name
+- Name is stored in `wiki_author_name` cookie (2-year expiry)
+- Subsequent saves use the stored cookie automatically
+- Users can change their name via "(change)" link in edit header
+- Displayed on page view as "Last updated: [date] by [name]"
 
 **User-Editable Fields:**
 - All other fields are user-defined and editable
