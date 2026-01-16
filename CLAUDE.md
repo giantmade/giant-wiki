@@ -107,9 +107,9 @@ last_updated: 2026-01-06 16:56:00.736849
 - System fields are not editable by users (excluded from edit form)
 
 **User Identity:**
-- On first save, a modal prompts for the user's name
+- When clicking Edit or New Page, a modal prompts for the user's name if not already set
 - Name is stored in `wiki_author_name` cookie (2-year expiry)
-- Subsequent saves use the stored cookie automatically
+- Subsequent edits use the stored cookie automatically
 - Users can change their name via "(change)" link in edit header
 - Displayed on page view as "Last updated: [date] by [name]"
 
