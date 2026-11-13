@@ -1,9 +1,0 @@
-[build]
-builder = "RAILPACK"
-
-[deploy]
-startCommand = "scripts/railway-start.sh"
-preDeployCommand = "cd src && python manage.py migrate --noinput && python manage.py collectstatic --noinput"
-healthcheckPath = "/health/"
-healthcheckTimeout = 300
-restartPolicyType = "ON_FAILURE"

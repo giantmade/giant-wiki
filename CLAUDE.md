@@ -411,6 +411,5 @@ Notifications are fire-and-forget - errors never block page operations.
 
 Deployed to Railway with Tailscale forwarder for private access:
 
-- `railway-web.toml` - Web service config
-- `railway-worker.toml` - Worker service config
+- `.railway/railway.py` - Railway IaC for web, worker, tailscale-proxy, MySQL and Redis (develop and production)
 - Private access via Tailscale network only

@@ -41,7 +41,8 @@ See [CLAUDE.md](CLAUDE.md) for detailed project documentation.
 
 ## Deployment
 
-Deployed to Railway with Tailscale forwarder:
+Deployed to Railway with Tailscale forwarder. The Railway project is defined in
+`.railway/railway.py`; see `.railway/README.md` for planning and applying changes.
 
 1. Configure `WIKI_REPO_URL` pointing to content repository
 2. Set `GIT_SSH_KEY` (base64-encoded) for Git authentication
