@@ -1,0 +1,10 @@
+dev.Dockerfile
+docker-compose.yml
+var/
+.env
+.testmondata
+htmlcov/
+.coverage
+__pycache__/
+*.pyc
+.git/

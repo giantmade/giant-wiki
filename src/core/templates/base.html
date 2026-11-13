@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{% endblock %} | {{ site_title }}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📝</text></svg>">
+
+    <!-- Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+          rel="stylesheet"
+          crossorigin="anonymous">
+
+    <!-- Tailwind CSS (dynamic CDN - SRI not supported) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwindcss.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- HTMX -->
+    <script defer src="https://unpkg.com/htmx.org@1.9.10/dist/htmx.min.js"
+            integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC"
+            crossorigin="anonymous"></script>
+
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"
+            integrity="sha384-l8f0VcPi/M1iHPv8egOnY/15TDwqgbOR1anMIJWvU6nLRgZVLTLSaNqi/TOoT5Fh"
+            crossorigin="anonymous"></script>
+
+    <!-- Mermaid.js for diagram rendering -->
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose',
+            fontFamily: 'Inter, sans-serif'
+        });
+    </script>
+
+    <!-- Custom styles -->
+    <style>
+        /* Alpine.js cloak - hide elements until Alpine initializes */
+        [x-cloak] { display: none !important; }
+
+        /* Markdown content styles */
+        .prose { overflow-wrap: anywhere; }
+        .prose h1 { font-size: 2rem; font-weight: 300; margin-bottom: 1rem; color: #1f2937; }
+        .prose h2 { font-size: 1.5rem; font-weight: 300; margin-top: 2rem; margin-bottom: 0.75rem; color: #1f2937; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; }
+        .prose h3 { font-size: 1.25rem; font-weight: 500; margin-top: 1.5rem; margin-bottom: 0.5rem; color: #1f2937; }
+        .prose p { margin-bottom: 1rem; line-height: 1.75; }
+        .prose ul { margin-bottom: 1rem; padding-left: 1.5rem; list-style-type: disc; }
+        .prose ol { margin-bottom: 1rem; padding-left: 1.5rem; list-style-type: decimal; }
+        .prose li { margin-bottom: 0.25rem; }
+        .prose a { color: #22c55e; text-decoration: none; }
+        .prose a:hover { text-decoration: underline; }
+        .prose code { background: #f3f4f6; padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; }
+        .prose pre { background: #1f2937; color: #e5e7eb; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; max-width: 100%; }
+        .prose pre code { background: none; padding: 0; }
+        .prose blockquote { border-left: 4px solid #22c55e; padding-left: 1rem; margin: 1rem 0; color: #6b7280; font-style: italic; }
+        .prose table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+        .prose th, .prose td { border: 1px solid #e5e7eb; padding: 0.5rem 1rem; text-align: left; }
+        .prose th { background: #f9fafb; font-weight: 500; }
+        .prose mark { background: #fef08a; padding: 0 0.125rem; }
+
+        /* Mermaid diagram styles */
+        .prose .mermaid {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            overflow-x: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Ensure Mermaid SVGs scale properly */
+        .prose .mermaid svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* Sidebar markdown */
+        .sidebar-content a { color: #d1d5db; }
+        .sidebar-content a:hover { color: #22c55e; }
+        .sidebar-content h1, .sidebar-content h2, .sidebar-content h3 { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #9ca3af; margin-top: 1.5rem; margin-bottom: 0.5rem; }
+        .sidebar-content ul { list-style: none; padding: 0; }
+        .sidebar-content li { margin-bottom: 0.25rem; }
+        .sidebar-content p { margin-bottom: 0.5rem; }
+
+        /* Resizable sidebar variables */
+        :root {
+            --sidebar-width: 256px;
+        }
+
+        .sidebar-resizable {
+            width: var(--sidebar-width) !important;
+        }
+
+        .main-with-sidebar {
+            margin-left: var(--sidebar-width) !important;
+        }
+
+        /* Resize handle */
+        .resize-handle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            cursor: col-resize;
+            background: transparent;
+            transition: background 0.2s;
+            z-index: 10;
+        }
+
+        .resize-handle:hover,
+        .resize-handle.dragging {
+            background: rgba(34, 197, 94, 0.5);
+        }
+
+        /* Dragging state */
+        body.sidebar-resizing {
+            cursor: col-resize !important;
+            user-select: none !important;
+        }
+
+        body.sidebar-resizing * {
+            cursor: col-resize !important;
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+
+<body class="font-sans font-light bg-gray-50 text-gray-900"
+      x-data="sidebarResize()"
+      x-init="init()"
+      :class="{ 'sidebar-resizing': isResizing }">
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <nav class="sidebar-resizable fixed left-0 top-0 h-full bg-gray-900 text-gray-300 overflow-y-auto">
+            <!-- Resize handle -->
+            <div class="resize-handle"
+                 :class="{ 'dragging': isResizing }"
+                 @mousedown="startResize"
+                 title="Drag to resize sidebar"
+                 aria-label="Resize sidebar">
+            </div>
+
+            <!-- Logo/Title -->
+            <div class="px-6 py-4 border-b border-gray-800">
+                <a href="{% url 'wiki' %}" class="flex items-center space-x-3 text-xl font-light tracking-wide text-white hover:text-green-400 transition-colors">
+                    <svg class="h-7 w-7 flex-shrink-0" viewBox="0 0 146.84 146.84" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <g fill="currentColor">
+                            <path d="m73.42 129.16c-30.74 0-55.74-25.01-55.74-55.74s25.01-55.74 55.74-55.74c14.89 0 28.89 5.8 39.42 16.33l-5.66 5.66c-9.02-9.02-21-13.98-33.75-13.98-26.32 0-47.73 21.41-47.73 47.74s21.41 47.73 47.73 47.73 47.73-21.41 47.73-47.73v-4h8.01v4c0 30.74-25.01 55.74-55.74 55.74z"></path>
+                            <path d="m73.42 146.84c-40.48 0-73.42-32.94-73.42-73.42s32.94-73.42 73.42-73.42c19.61 0 38.05 7.64 51.92 21.5l-5.66 5.66c-12.35-12.35-28.78-19.16-46.25-19.16-36.08.01-65.42 29.35-65.42 65.42s29.34 65.41 65.41 65.41 65.41-29.34 65.41-65.41v-4h8.01v4c0 40.48-32.94 73.42-73.42 73.42z"></path>
+                            <path d="m77.42 69.41-8.01 8.01h33.8c-1.96 14.69-14.58 26.06-29.8 26.06-16.58 0-30.06-13.49-30.06-30.06s13.49-30.06 30.06-30.06c8.03 0 15.58 3.13 21.26 8.8l5.66-5.66c-7.19-7.19-16.75-11.15-26.92-11.15-20.99 0-38.07 17.08-38.07 38.07s17.08 38.07 38.07 38.07 38.07-17.08 38.07-38.07v-4h-34.07z"></path>
+                        </g>
+                    </svg>
+                    <span>Wiki</span>
+                </a>
+            </div>
+
+            <!-- Search -->
+            <div class="px-4 py-3 border-b border-gray-800">
+                <form method="GET" action="{% url 'search' %}" role="search">
+                    <label for="sidebar-search" class="sr-only">Search wiki</label>
+                    <input
+                        type="search"
+                        id="sidebar-search"
+                        name="q"
+                        placeholder="Search..."
+                        class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                </form>
+            </div>
+
+            <!-- Sidebar navigation -->
+            <div class="px-4 py-4 text-sm flex-1 overflow-y-auto">
+                {% block sidebar %}
+                <!-- Pages Section Header -->
+                <div class="px-0 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    Pages
+                </div>
+
+                {% for category in sidebar_categories %}
+                <div class="mb-4" x-data="{ open: {{ category.is_expanded|yesno:'true,false' }} }">
+                    <button
+                        @click="open = !open"
+                        :aria-expanded="open"
+                        class="flex items-center justify-between w-full text-xs text-gray-400 uppercase tracking-wider font-semibold mb-2 hover:text-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900 rounded"
+                    >
+                        <span>{{ category.name }}</span>
+                        <svg
+                            class="w-4 h-4 transition-transform"
+                            :class="{ 'rotate-90': open }"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                    <ul x-show="open" x-collapse class="space-y-1">
+                        {% for item in category.items %}
+                        <li>
+                            <a
+                                href="{% url 'page' page_path=item.path %}"
+                                class="block py-1 px-2 rounded {% if item.is_current %}bg-gray-800 text-green-400{% else %}text-gray-400 hover:text-white hover:bg-gray-800{% endif %}"
+                            >
+                                {{ item.title }}
+                            </a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% empty %}
+                <p class="text-gray-500">No pages yet</p>
+                {% endfor %}
+
+                <!-- System Section Header -->
+                <div class="px-0 py-2 mt-6 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                    System
+                </div>
+
+                <!-- History -->
+                <a href="{% url 'history' %}" class="block px-0 py-2.5 text-sm font-normal text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    History
+                </a>
+
+                <!-- Tasks -->
+                <a href="{% url 'tasks_list' %}" class="block px-0 py-2.5 text-sm font-normal text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+                    </svg>
+                    Tasks
+                </a>
+
+                <!-- Archive -->
+                <a href="{% url 'archive_list' %}" class="block px-0 py-2.5 text-sm font-normal text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors">
+                    <svg class="w-5 h-5 inline-block mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                    Archive
+                </a>
+                {% endblock %}
+            </div>
+        </nav>
+
+        <!-- Main content -->
+        <main class="main-with-sidebar flex-1 min-w-0 overflow-hidden">
+            {% block header %}{% endblock %}
+
+            <div class="p-6">
+                {% block body %}{% endblock %}
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('sidebarResize', () => ({
+                // State
+                sidebarWidth: 256,
+                isResizing: false,
+                startX: 0,
+                startWidth: 0,
+
+                // Constants
+                MIN_WIDTH: 200,
+                MAX_WIDTH: 600,
+                COOKIE_NAME: 'sidebar_width',
+                COOKIE_DAYS: 365,
+
+                // Initialize: Load from cookie
+                init() {
+                    const savedWidth = this.getCookie(this.COOKIE_NAME);
+                    if (savedWidth) {
+                        const width = parseInt(savedWidth, 10);
+                        if (!isNaN(width) && width >= this.MIN_WIDTH && width <= this.MAX_WIDTH) {
+                            this.sidebarWidth = width;
+                        }
+                    }
+                    this.updateCSSVariable();
+                },
+
+                // Start resize
+                startResize(event) {
+                    this.isResizing = true;
+                    this.startX = event.clientX;
+                    this.startWidth = this.sidebarWidth;
+
+                    const handleResize = this.handleResize.bind(this);
+                    const stopResize = this.stopResize.bind(this);
+
+                    // Store bound functions for removal
+                    this.boundHandleResize = handleResize;
+                    this.boundStopResize = stopResize;
+
+                    document.addEventListener('mousemove', handleResize);
+                    document.addEventListener('mouseup', stopResize);
+
+                    event.preventDefault();
+                },
+
+                // Handle resize
+                handleResize(event) {
+                    if (!this.isResizing) return;
+
+                    const deltaX = event.clientX - this.startX;
+                    let newWidth = this.startWidth + deltaX;
+
+                    // Clamp to min/max
+                    newWidth = Math.max(this.MIN_WIDTH, Math.min(this.MAX_WIDTH, newWidth));
+
+                    this.sidebarWidth = newWidth;
+                    this.updateCSSVariable();
+                },
+
+                // Stop resize
+                stopResize() {
+                    if (!this.isResizing) return;
+
+                    this.isResizing = false;
+
+                    document.removeEventListener('mousemove', this.boundHandleResize);
+                    document.removeEventListener('mouseup', this.boundStopResize);
+
+                    // Save to cookie
+                    this.setCookie(this.COOKIE_NAME, this.sidebarWidth, this.COOKIE_DAYS);
+                },
+
+                // Update CSS variable
+                updateCSSVariable() {
+                    document.documentElement.style.setProperty('--sidebar-width', `${this.sidebarWidth}px`);
+                },
+
+                // Cookie utilities
+                setCookie(name, value, days) {
+                    const date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    const expires = `expires=${date.toUTCString()}`;
+                    document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax`;
+                },
+
+                getCookie(name) {
+                    const nameEQ = `${name}=`;
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        let cookie = cookies[i].trim();
+                        if (cookie.indexOf(nameEQ) === 0) {
+                            return cookie.substring(nameEQ.length);
+                        }
+                    }
+                    return null;
+                }
+            }));
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

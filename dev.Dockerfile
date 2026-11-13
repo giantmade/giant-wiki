@@ -1,0 +1,33 @@
+FROM python:3.13-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /app
+
+# Install system dependencies
+# - git, openssh-client: Git storage backend
+# - libmariadb3: MySQL runtime library (required to run mysqlclient)
+# - default-libmysqlclient-dev, pkg-config, build-essential: MySQL client compilation
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    openssh-client \
+    libmariadb3 \
+    default-libmysqlclient-dev \
+    pkg-config \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install dependencies
+COPY pyproject.toml uv.lock /app/
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Copy application code
+COPY src/ /app/src/
+COPY scripts/ /app/scripts/
+
+WORKDIR /app/src
+EXPOSE 8000
